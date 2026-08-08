@@ -56,14 +56,14 @@ case"uniform":{let a=p.a,b=p.b,v=x>=a&&x<=b?1/(b-a):0,c=x<=a?0:x>=b?1:(x-a)/(b-a
 case"normal":{let m=p.mu,s=p.sigma;return{v:normalPdf(x,m,s),c:normalCdf(x,m,s),m,vv:s*s,range:[m-4*s,m+4*s],discrete:false}}
 case"exponential":{let l=p.lambda,v=x<0?0:l*Math.exp(-l*x),c=x<0?0:1-Math.exp(-l*x);return{v,c,m:1/l,vv:1/(l*l),range:[0,Math.max(5/l,5)],discrete:false}}
 case"gamma":{let k=p.shape,th=p.scale,v=gammaPdf(x,k,th),c=integrateCDF(z=>gammaPdf(z,k,th),x,0);return{v,c,m:k*th,vv:k*th*th,range:[0,k*th+6*Math.sqrt(k*th*th)],discrete:false}}
-case"beta":{let a=p.alpha,b=p.beta,v=betaPdf(x,a,b),c=integrateCDF(z=>betaPdf(z,a,b),x,0),m=a/(a+b),vv:a*b/((a+b)**2*(a+b+1));return{v,c,m,vv,range:[0,1],discrete:false}}
+case"beta":{let a=p.alpha,b=p.beta,v=betaPdf(x,a,b),c=integrateCDF(z=>betaPdf(z,a,b),x,0),m=a/(a+b),vv=a*b/((a+b)**2*(a+b+1));return{v,c,m,vv,range:[0,1],discrete:false}}
 case"weibull":{let k=p.shape,th=p.scale,v=x<0?0:(k/th)*Math.pow(x/th,k-1)*Math.exp(-Math.pow(x/th,k)),c=x<0?0:1-Math.exp(-Math.pow(x/th,k)),m=th*gamma(1+1/k),vv=th*th*(gamma(1+2/k)-Math.pow(gamma(1+1/k),2));return{v,c,m,vv,range:[0,th*4],discrete:false}}
 case"lognormal":{let m=p.mu,s=p.sigma,v=x<=0?0:Math.exp(-.5*((Math.log(x)-m)/s)**2)/(x*s*Math.sqrt(2*Math.PI)),c=x<=0?0:normalCdf(Math.log(x),m,s);return{v,c,m:Math.exp(m+s*s/2),vv:(Math.exp(s*s)-1)*Math.exp(2*m+s*s),range:[.001,Math.exp(m+4*s)],discrete:false}}
 case"cauchy":{let x0=p.x0,g=p.gamma,v=1/(Math.PI*g*(1+((x-x0)/g)**2)),c=.5+Math.atan((x-x0)/g)/Math.PI;return{v,c,m:NaN,vv:NaN,range:[x0-10*g,x0+10*g],discrete:false}}
 case"t":{let v=p.df,z=x,den=tPdf(z,v),c=.5+Math.sign(z)*integrateCDF(t=>tPdf(t,v),Math.abs(z),0);return{v:den,c,m:v>1?0:NaN,vv:v>2?v/(v-2):NaN,range:[-5,5],discrete:false}}
 case"f":{let d1=p.df1,d2=p.df2,v=fPdf(x,d1,d2),c=integrateCDF(z=>fPdf(z,d1,d2),x,0);return{v,c,m:d2>2?d2/(d2-2):NaN,vv:NaN,range:[.001,5],discrete:false}}
 case"chisq":{let k=p.df,v=gammaPdf(x,k/2,2),c=integrateCDF(z=>gammaPdf(z,k/2,2),x,0);return{v,c,m:k,vv:2*k,range:[0,k+6*Math.sqrt(2*k)],discrete:false}}
-case"logistic":{let m=p.mu,s=p.s,v=Math.exp(-(x-m)/s)/(s*Math.pow(1+Math.exp(-(x-m)/s),2)),c:1/(1+Math.exp(-(x-m)/s));return{v,c,m,vv:Math.PI*Math.PI*s*s/3,range:[m-8*s,m+8*s],discrete:false}}
+case"logistic":{let m=p.mu,s=p.s,v=Math.exp(-(x-m)/s)/(s*Math.pow(1+Math.exp(-(x-m)/s),2)),c=1/(1+Math.exp(-(x-m)/s));return{v,c,m,vv:Math.PI*Math.PI*s*s/3,range:[m-8*s,m+8*s],discrete:false}}
 case"laplace":{let m=p.mu,b=p.b,v=Math.exp(-Math.abs(x-m)/b)/(2*b),c=x<m?.5*Math.exp((x-m)/b):1-.5*Math.exp(-(x-m)/b);return{v,c,m,vv:2*b*b,range:[m-8*b,m+8*b],discrete:false}}
 case"pareto":{let xm=p.xm,a=p.alpha,v=x<xm?0:a*Math.pow(xm,a)/Math.pow(x,a+1),c=x<xm?0:1-Math.pow(xm/x,a);return{v,c,m:a>1?a*xm/(a-1):NaN,vv:a>2?a*xm*xm/((a-1)**2*(a-2)):NaN,range:[xm,xm*15],discrete:false}}
 case"rayleigh":{let s=p.sigma,v=x<0?0:x/(s*s)*Math.exp(-x*x/(2*s*s)),c=x<0?0:1-Math.exp(-x*x/(2*s*s));return{v,c,m:s*Math.sqrt(Math.PI/2),vv:(4-Math.PI)*s*s/2,range:[0,4*s],discrete:false}}
