@@ -1,4 +1,3 @@
-
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f7f9fc;color:#14213d;line-height:1.55}
@@ -19,7 +18,7 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f7f9fc;col
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{background:#fff;border:1px solid #e0e7f0;border-radius:17px;padding:24px;box-shadow:0 5px 20px rgba(25,45,80,.04)}
 .card p{color:#68768b}.btn{display:inline-block;background:#2563eb;color:#fff;border:0;border-radius:9px;padding:10px 15px;font-weight:700;cursor:pointer;text-decoration:none}
 .dist-controls{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:25px}.dist-controls input,.dist-controls select,.field input,.field select{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:10px;background:#fff}
-.dist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.dist-card{background:#fff;border:1px solid #e0e7f0;border-radius:13px;padding:16px;cursor:pointer;transition:.15s}.dist-card:hover{border-color:#9ebcf3;transform:translateY(-2px)}.dist-card h4{margin:0 0 5px}.dist-card small{color:#748197}
+.dist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.dist-card{background:#fff;border:1px solid #e0e7f0;border-radius:13px;padding:16px;cursor:pointer;transition:.15s;text-decoration:none;color:#14213d}.dist-card:hover{border-color:#9ebcf3;transform:translateY(-2px)}.dist-card h4{margin:0 0 5px}.dist-card small{color:#748197}
 .formula-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:17px}.formula{background:#fff;border:1px solid #e0e7f0;border-radius:15px;padding:22px}.formula code{display:block;color:#2563eb;font-size:18px;margin-top:10px}
 .calc-shell{background:#fff;border:1px solid #dfe6ef;border-radius:20px;padding:26px;box-shadow:0 8px 30px rgba(25,45,80,.05)}
 .calc-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.calc-head h2{margin:0 0 5px}.muted{color:#718096}.field-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#526176}.calc-actions{display:flex;gap:10px;flex-wrap:wrap}.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}.result-box{background:#f1f6ff;border-radius:13px;padding:15px}.result-box span{display:block;color:#6a7890;font-size:12px}.result-box strong{display:block;color:#2563eb;font-size:20px;margin-top:3px;word-break:break-word}
