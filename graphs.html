@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Data Visualization | Statistical Hub</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="header">
+<a class="brand" href="index.html"><span class="logo">Σ</span><span>Statistical <b>Hub</b></span></a>
+<button class="menu-btn" aria-label="Open menu" aria-expanded="false">☰</button>
+</header>
+<nav class="menu" aria-label="Main menu">
+<a href="index.html">🏠 Home</a><a href="tools.html">📊 Statistical Tools</a><a href="distributions.html">🎲 Distributions</a><a href="formulas.html">∑ Formulas</a><a href="about.html">ⓘ About</a>
+</nav>
+<main class="page">
+<div class="container">
+<div class="page-title">
+<div class="tag">DATA VISUALIZATION</div>
+<h1>All-in-One Graph Generator</h1>
+<p>Enter your dataset once and Statistical Hub will create the main statistical graphs automatically.</p>
+</div>
+
+<div class="calc-shell graph-generator">
+<div class="graph-input-grid">
+<div>
+<label class="input-label" for="graphData">Numerical data</label>
+<textarea id="graphData" rows="7" placeholder="Example: 12, 15, 18, 20, 20, 22, 25, 28, 30">12, 15, 18, 20, 20, 22, 25, 28, 30, 32, 35, 35, 38, 40</textarea>
+<p class="input-help">Use commas, spaces or new lines between observations.</p>
+</div>
+<div>
+<label class="input-label" for="categoryData">Category data for Bar/Pie Chart <span>(optional)</span></label>
+<textarea id="categoryData" rows="7" placeholder="Example:
+Male: 40
+Female: 60"></textarea>
+<p class="input-help">Format: <b>Category: Frequency</b>, one category per line. If left blank, Bar/Pie will use the numerical values as categories.</p>
+</div>
+</div>
+<div class="graph-options">
+<label><span>Histogram classes</span><select id="classCount"><option value="auto">Automatic</option><option>5</option><option>6</option><option>7</option><option>8</option><option>10</option><option>12</option><option>15</option></select></label>
+<label class="check-label"><input type="checkbox" id="showGrid" checked> Show grid</label>
+</div>
+<div class="calc-actions">
+<button class="btn" onclick="generateAllGraphs()">Generate All Graphs</button>
+<button class="btn secondary-btn" onclick="loadSampleGraphData()">Load Sample Data</button>
+<button class="btn light-btn" onclick="clearGraphs()">Clear</button>
+</div>
+<div id="graphError" class="graph-error"></div>
+<div id="graphSummary"></div>
+</div>
+
+<div id="chartsArea" class="charts-area">
+<section class="chart-card"><div class="chart-card-head"><h2>1. Histogram</h2><span>Numerical data</span></div><canvas id="histogram"></canvas></section>
+<section class="chart-card"><div class="chart-card-head"><h2>2. Frequency Polygon</h2><span>Numerical data</span></div><canvas id="frequencyPolygon"></canvas></section>
+<section class="chart-card"><div class="chart-card-head"><h2>3. Cumulative Curve (Ogive)</h2><span>Less-than ogive</span></div><canvas id="ogive"></canvas></section>
+<section class="chart-card"><div class="chart-card-head"><h2>4. Boxplot</h2><span>Five-number summary</span></div><canvas id="boxplot"></canvas></section>
+<section class="chart-card"><div class="chart-card-head"><h2>5. Stem-and-Leaf Plot</h2><span>Numerical data</span></div><div id="stemLeaf" class="stem-leaf"></div></section>
+<section class="chart-card"><div class="chart-card-head"><h2>6. Bar Chart</h2><span>Categorical data</span></div><canvas id="barChart"></canvas></section>
+<section class="chart-card"><div class="chart-card-head"><h2>7. Pie Chart</h2><span>Categorical data</span></div><canvas id="pieChart"></canvas></section>
+</div>
+</div>
+</main>
+<footer class="footer"><span>Statistical Hub</span><span>Data Visualization</span></footer>
+<script src="script.js"></script>
+<script src="graphs.js"></script>
+</body>
+</html>
