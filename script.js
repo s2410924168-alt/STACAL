@@ -25,7 +25,91 @@ function menuInit(){const b=document.querySelector(".menu-btn"),m=document.query
 function nums(v){return v.split(",").map(Number).filter(Number.isFinite)} function mean(a){return a.reduce((s,x)=>s+x,0)/a.length}
 function median(a){a=[...a].sort((x,y)=>x-y);return a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2}
 function sd(a){let m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1))}
-function calcDesc(){let el=document.getElementById("data");if(!el)return;let a=nums(el.value);if(a.length<2)return;let s=sd(a);document.getElementById("descResult").innerHTML=`<div class="result-grid"><div class="result-box"><span>n</span><strong>${a.length}</strong></div><div class="result-box"><span>Mean</span><strong>${mean(a).toFixed(5)}</strong></div><div class="result-box"><span>Median</span><strong>${median(a).toFixed(5)}</strong></div><div class="result-box"><span>Sample SD</span><strong>${s.toFixed(5)}</strong></div></div>`}
+function descGraphs(a){
+ const sorted=[...a].sort((x,y)=>x-y), n=a.length;
+ const freq=new Map(); sorted.forEach(x=>freq.set(x,(freq.get(x)||0)+1));
+ const vals=[...freq.keys()], fs=[...freq.values()];
+ const min=sorted[0], max=sorted[n-1];
+ const bins=Math.max(3,Math.min(10,Math.ceil(Math.sqrt(n))));
+ const width=max===min?1:(max-min)/bins;
+ const edges=Array.from({length:bins+1},(_,i)=>min+i*width);
+ const counts=Array(bins).fill(0); a.forEach(x=>{let j=max===min?0:Math.min(bins-1,Math.floor((x-min)/width));counts[j]++});
+ const W=720,H=360,p=52;
+ const sx=(x,x0=min,x1=max===min?min+1:max)=>p+(x-x0)/(x1-x0)*(W-2*p);
+ const maxF=Math.max(...counts, ...fs, 1);
+ const sy=f=>H-p-f/maxF*(H-2*p);
+ const axis=`<line x1="${p}" y1="${H-p}" x2="${W-p}" y2="${H-p}" class="bi-axis"/><line x1="${p}" y1="${p}" x2="${p}" y2="${H-p}" class="bi-axis"/>`;
+ const title=t=>`<h4>${t}</h4>`;
+ // Histogram
+ let hist=axis;
+ counts.forEach((c,i)=>{const x0=edges[i],x1=edges[i+1],rx=sx(x0),rw=sx(x1)-rx;hist+=`<rect x="${rx}" y="${sy(c)}" width="${Math.max(1,rw-1)}" height="${H-p-sy(c)}" class="bi-bar"><title>Class ${i+1}: ${c}</title></rect>`});
+ hist+=`<text x="${W/2}" y="${H-10}" text-anchor="middle" class="bi-label">Value</text><text x="16" y="${H/2}" text-anchor="middle" transform="rotate(-90 16 ${H/2})" class="bi-label">Frequency</text>`;
+ // Frequency polygon
+ let poly=axis; const pts=counts.map((c,i)=>`${sx((edges[i]+edges[i+1])/2)},${sy(c)}`).join(' '); poly+=`<polyline points="${pts}" fill="none" class="bi-regline"/>`;counts.forEach((c,i)=>poly+=`<circle cx="${sx((edges[i]+edges[i+1])/2)}" cy="${sy(c)}" r="4" class="bi-point"/>`);
+ // Ogive cumulative curve
+ let cum=0, ogPts=`${sx(min)},${sy(0)}`; counts.forEach((c,i)=>{cum+=c;ogPts+=` ${sx(edges[i+1])},${sy(cum)}`});
+ let og=axis+`<polyline points="${ogPts}" fill="none" class="bi-regline"/>`; cum=0; counts.forEach((c,i)=>{cum+=c;og+=`<circle cx="${sx(edges[i+1])}" cy="${sy(cum)}" r="4" class="bi-point"/>`});
+ // Boxplot
+ const q=(arr,prob)=>{let pos=(arr.length-1)*prob,lo=Math.floor(pos),hi=Math.ceil(pos);return lo===hi?arr[lo]:arr[lo]+(arr[hi]-arr[lo])*(pos-lo)};
+ const q1=q(sorted,.25),med=q(sorted,.5),q3=q(sorted,.75),iqr=q3-q1,lo=sorted.find(x=>x>=q1-1.5*iqr)??min,hi=[...sorted].reverse().find(x=>x<=q3+1.5*iqr)??max;
+ const bxMin=min,bxMax=max===min?min+1:max,bsx=x=>p+(x-bxMin)/(bxMax-bxMin)*(W-2*p), cy=H/2;
+ let box=axis+`<line x1="${bsx(lo)}" y1="${cy}" x2="${bsx(q1)}" y2="${cy}" class="bi-axis"/><line x1="${bsx(q3)}" y1="${cy}" x2="${bsx(hi)}" y2="${cy}" class="bi-axis"/><line x1="${bsx(lo)}" y1="${cy-22}" x2="${bsx(lo)}" y2="${cy+22}" class="bi-axis"/><line x1="${bsx(hi)}" y1="${cy-22}" x2="${bsx(hi)}" y2="${cy+22}" class="bi-axis"/><rect x="${bsx(q1)}" y="${cy-35}" width="${Math.max(2,bsx(q3)-bsx(q1))}" height="70" fill="none" class="bi-point"/><line x1="${bsx(med)}" y1="${cy-35}" x2="${bsx(med)}" y2="${cy+35}" class="bi-regline"/><text x="${W/2}" y="${H-10}" text-anchor="middle" class="bi-label">Value</text>`;
+ // Stem and leaf
+ const leaves=new Map(); sorted.forEach(x=>{const k=Math.floor(x/10), leaf=x-k*10;if(!leaves.has(k))leaves.set(k,[]);leaves.get(k).push(leaf)});
+ let stem=`<div class="stemleaf"><div><b>Stem</b> | <b>Leaves</b></div>`;[...leaves.keys()].sort((a,b)=>a-b).forEach(k=>stem+=`<div>${k} | ${leaves.get(k).join(' ')}</div>`);stem+=`<small>Key: 4 | 5 = 45</small></div>`;
+ // Bar chart and pie chart for distinct values
+ const chartVals=vals.slice(0,20), chartFs=fs.slice(0,20), barMax=Math.max(...chartFs,1), bw=(W-2*p)/Math.max(chartVals.length,1);
+ let bar=axis;chartVals.forEach((v,i)=>{const h=chartFs[i]/barMax*(H-2*p),x=p+i*bw+3;bar+=`<rect x="${x}" y="${H-p-h}" width="${Math.max(2,bw-6)}" height="${h}" class="bi-bar"><title>${v}: ${chartFs[i]}</title></rect><text x="${x+bw/2-3}" y="${H-p+18}" text-anchor="middle" class="bi-label">${String(v).slice(0,8)}</text>`});
+ let pie=`<svg viewBox="0 0 420 320" role="img"><circle cx="210" cy="155" r="95" fill="none" class="bi-axis"/>`;
+ const total=chartFs.reduce((s,x)=>s+x,0); let angle=-Math.PI/2; const cx=210,cy2=155,r=95;
+ chartFs.forEach((f,i)=>{const a2=angle+2*Math.PI*f/total, x1=cx+r*Math.cos(angle),y1=cy2+r*Math.sin(angle),x2=cx+r*Math.cos(a2),y2=cy2+r*Math.sin(a2),large=(a2-angle)>Math.PI?1:0;pie+=`<path d="M ${cx} ${cy2} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="none" stroke="currentColor" stroke-width="${Math.max(8,Math.min(45,180*f/total))}" opacity="0.55"><title>${chartVals[i]}: ${(100*f/total).toFixed(2)}%</title></path>`;angle=a2});pie+=`<text x="210" y="300" text-anchor="middle" class="bi-label">Pie chart of frequencies</text></svg>`;
+ return `<div class="desc-graphs"><h3>Graphs &amp; Visualizations</h3><div class="desc-graph-grid">
+ <div class="desc-graph">${title('Histogram')}<svg viewBox="0 0 ${W} ${H}">${hist}</svg></div>
+ <div class="desc-graph">${title('Frequency Polygon')}<svg viewBox="0 0 ${W} ${H}">${poly}</svg></div>
+ <div class="desc-graph">${title('Cumulative Frequency Curve (Ogive)')}<svg viewBox="0 0 ${W} ${H}">${og}</svg></div>
+ <div class="desc-graph">${title('Boxplot')}<svg viewBox="0 0 ${W} ${H}">${box}</svg></div>
+ <div class="desc-graph">${title('Bar Chart')}<svg viewBox="0 0 ${W} ${H}">${bar}</svg></div>
+ <div class="desc-graph">${title('Pie Chart')}${pie}</div>
+ <div class="desc-graph">${title('Stem-and-Leaf Plot')}${stem}</div>
+ </div><p class="graph-note">Graphs are generated automatically from the entered observations. For continuous data, histogram/frequency polygon/ogive use automatically selected class intervals; bar and pie charts use distinct observed values.</p></div>`;
+}
+
+function calcDesc(){
+ const el=document.getElementById("data"); if(!el)return;
+ const a=nums(el.value.replace(/[\s;\n\t]+/g,","));
+ const out=document.getElementById("descResult");
+ if(a.length<2){out.innerHTML='<div class="bi-warn">Please enter at least two numerical observations.</div>';return;}
+ const n=a.length, m=mean(a), sorted=[...a].sort((x,y)=>x-y);
+ const sum=a.reduce((s,x)=>s+x,0), min=sorted[0], max=sorted[n-1], range=max-min;
+ const med=median(a), q1=median(sorted.slice(0,Math.floor(n/2))), q3=median(sorted.slice(Math.ceil(n/2)));
+ const variance=a.reduce((s,x)=>s+(x-m)**2,0)/(n-1), S=Math.sqrt(variance), se=S/Math.sqrt(n);
+ const raw=k=>a.reduce((s,x)=>s+x**k,0)/n;
+ const central=k=>a.reduce((s,x)=>s+(x-m)**k,0)/n;
+ const mu2=central(2),mu3=central(3),mu4=central(4);
+ const skew=mu2>0?mu3/(mu2**1.5):NaN, kurt=mu2>0?mu4/(mu2**2):NaN, excess=kurt-3;
+ const freq=new Map();a.forEach(x=>freq.set(x,(freq.get(x)||0)+1));
+ const maxFreq=Math.max(...freq.values()), modes=[...freq.entries()].filter(([v,c])=>c===maxFreq).map(x=>x[0]);
+ const mode=(maxFreq===1)?"No mode":modes.join(", ");
+ const cv=m!==0?S/Math.abs(m)*100:NaN;
+ const box=(label,val)=>`<div class="result-box"><span>${label}</span><strong>${Number.isFinite(val)?val.toFixed(5):"—"}</strong></div>`;
+ out.innerHTML=`
+ <div class="result-grid">
+ ${box("n",n)}${box("Σx",sum)}${box("Mean",m)}<div class="result-box"><span>Mode</span><strong>${mode}</strong></div>
+ ${box("Median",med)}${box("Minimum",min)}${box("Maximum",max)}${box("Range",range)}${box("Q1",q1)}${box("Q3",q3)}${box("IQR",q3-q1)}
+ ${box("Sample Variance",variance)}${box("Sample SD",S)}${box("Standard Error",se)}${box("CV (%)",cv)}
+ </div>
+ <div class="desc-detail"><h4>Moments</h4>
+ <table class="bi-table"><thead><tr><th>Measure</th><th>Value</th></tr></thead><tbody>
+ <tr><td>1st Raw Moment</td><td>${raw(1).toFixed(5)}</td></tr><tr><td>2nd Raw Moment</td><td>${raw(2).toFixed(5)}</td></tr><tr><td>3rd Raw Moment</td><td>${raw(3).toFixed(5)}</td></tr><tr><td>4th Raw Moment</td><td>${raw(4).toFixed(5)}</td></tr>
+ <tr><td>1st Central Moment</td><td>0.00000</td></tr><tr><td>2nd Central Moment</td><td>${mu2.toFixed(5)}</td></tr><tr><td>3rd Central Moment</td><td>${mu3.toFixed(5)}</td></tr><tr><td>4th Central Moment</td><td>${mu4.toFixed(5)}</td></tr>
+ <tr><td>Skewness</td><td>${skew.toFixed(5)}</td></tr><tr><td>Kurtosis</td><td>${kurt.toFixed(5)}</td></tr><tr><td>Excess Kurtosis</td><td>${excess.toFixed(5)}</td></tr>
+ </tbody></table>
+ <details class="bi-formula"><summary>Show formulas / laws</summary><div class="bi-formula-body">
+ <div class="formula-box">\\(\\bar{x}=\\frac{\\sum x}{n}\\)</div><div class="formula-box">\\(s^2=\\frac{\\sum(x-\\bar{x})^2}{n-1}\\)</div><div class="formula-box">\\(s=\\sqrt{s^2}\\)</div><div class="formula-box">\\(SE(\\bar{x})=\\frac{s}{\\sqrt n}\\)</div>
+ <div class="formula-box">\\(\\mu'_r=\\frac{1}{n}\\sum x^r\\)</div><div class="formula-box">\\(\\mu_r=\\frac{1}{n}\\sum(x-\\bar{x})^r\\)</div><div class="formula-box">\\(\\text{Skewness}=\\frac{\\mu_3}{\\mu_2^{3/2}}\\)</div><div class="formula-box">\\(\\text{Kurtosis}=\\frac{\\mu_4}{\\mu_2^2}\\)</div>
+ </div></details></div>${descGraphs(a)}`;
+ if(window.MathJax?.typesetPromise)window.MathJax.typesetPromise([out]).catch(()=>{});
+}
 
 function logGamma(z){const g=7,C=[0.9999999999998099,676.5203681218851,-1259.1392167224028,771.3234287776531,-176.6150291621406,12.507343278686905,-0.13857109526572012,9.984369578019572e-6,1.5056327351493116e-7];if(z<.5)return Math.log(Math.PI)-Math.log(Math.sin(Math.PI*z))-logGamma(1-z);z-=1;let x=C[0];for(let i=1;i<C.length;i++)x+=C[i]/(z+i);let t=z+g+.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x)}
 function gamma(z){return Math.exp(logGamma(z))} function logChoose(n,k){if(k<0||k>n)return -Infinity;return logGamma(n+1)-logGamma(k+1)-logGamma(n-k+1)}
@@ -201,44 +285,76 @@ document.getElementById("search").addEventListener("input",filterD);document.get
 
 /* ---------- Bivariate Analysis ---------- */
 function biTokens(v){return String(v||'').trim().split(/[\s,;\n\t]+/).filter(Boolean)}
-function biNum(v){let a=biTokens(v), n=a.map(Number);return a.length===n.length && a.length>0 && n.every(Number.isFinite)}
-function biNumeric(v){return biTokens(v).map(Number).filter(Number.isFinite)}
-function biCategorical(v){return biTokens(v)}
+function biNum(v){const a=biTokens(v);return a.length>0&&a.every(z=>Number.isFinite(Number(z)))}
+function biNumeric(v){return biTokens(v).map(Number)}
 function biFmt(x){return Number.isFinite(x)?(Math.abs(x)<1e-10?'0':x.toFixed(5)):'—'}
 function biMean(a){return a.reduce((s,x)=>s+x,0)/a.length}
-function biVariance(a){let m=biMean(a);return a.length>1?a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1):NaN}
-function biPearson(x,y){let mx=biMean(x),my=biMean(y),sx=0,sy=0,c=0;for(let i=0;i<x.length;i++){let dx=x[i]-mx,dy=y[i]-my;c+=dx*dy;sx+=dx*dx;sy+=dy*dy}return c/Math.sqrt(sx*sy)}
-function biRank(a){let idx=a.map((v,i)=>[v,i]).sort((u,v)=>u[0]-v[0]),r=Array(a.length),i=0;while(i<a.length){let j=i;while(j+1<a.length&&idx[j+1][0]===idx[i][0])j++;let av=(i+j+2)/2;for(let k=i;k<=j;k++)r[idx[k][1]]=av;i=j+1}return r}
+function biVariance(a){const m=biMean(a);return a.length>1?a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1):NaN}
+function biPearson(x,y){const mx=biMean(x),my=biMean(y);let c=0,sx=0,sy=0;for(let i=0;i<x.length;i++){let dx=x[i]-mx,dy=y[i]-my;c+=dx*dy;sx+=dx*dx;sy+=dy*dy}return c/Math.sqrt(sx*sy)}
+function biRank(a){const idx=a.map((v,i)=>[v,i]).sort((u,v)=>u[0]-v[0]),r=Array(a.length);let i=0;while(i<a.length){let j=i;while(j+1<a.length&&idx[j+1][0]===idx[i][0])j++;const av=(i+j+2)/2;for(let k=i;k<=j;k++)r[idx[k][1]]=av;i=j+1}return r}
 function biSpearman(x,y){return biPearson(biRank(x),biRank(y))}
-function biRegression(x,y){let mx=biMean(x),my=biMean(y),sxx=0,sxy=0;for(let i=0;i<x.length;i++){sxx+=(x[i]-mx)**2;sxy+=(x[i]-mx)*(y[i]-my)}let b=sxy/sxx,a=my-b*mx,r=biPearson(x,y);return{a,b,r,r2:r*r}}
-function biGroups(a){let m=new Map();a.forEach(v=>m.set(v,(m.get(v)||0)+1));return [...m.entries()].sort((x,y)=>String(x[0]).localeCompare(String(y[0]),undefined,{numeric:true}))}
-function biChiSquare(a,b){let rows=[...new Set(a)],cols=[...new Set(b)],obs=rows.map(r=>cols.map(c=>{let n=0;for(let i=0;i<a.length;i++)if(a[i]===r&&b[i]===c)n++;return n}));let rt=obs.map(r=>r.reduce((s,x)=>s+x,0)),ct=cols.map((_,j)=>obs.reduce((s,r)=>s+r[j],0)),N=a.length,chi=0;for(let i=0;i<rows.length;i++)for(let j=0;j<cols.length;j++){let e=rt[i]*ct[j]/N;if(e>0)chi+=(obs[i][j]-e)**2/e}return{chi,df:(rows.length-1)*(cols.length-1),rows,cols,obs}}
-function biErf(x){return erf(x)}
-function biNormalP(z){return .5*(1+biErf(z/Math.sqrt(2)))}
-function biTApproxP(t,df){let z=Math.abs(t);if(df>100)return 2*(1-biNormalP(z));let x=df/(df+z*z);let a=df/2,b=.5;function ibeta(xx,aa,bb){let bt=xx===0||xx===1?0:Math.exp(logGamma(aa+bb)-logGamma(aa)-logGamma(bb)+aa*Math.log(xx)+bb*Math.log(1-xx));function cf(x,a,b){let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;for(let m=1;m<=200;m++){let m2=2*m,aa1=m*(b-m)*x/((qam+m2)*(a+m2)),aa2=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa1*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa1/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;h*=d*c;d=1+aa2*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa2/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;let del=d*c;h*=del;if(Math.abs(del-1)<3e-7)break}return h}if(xx<(aa+1)/(aa+bb+2))return bt*cf(xx,aa,bb)/aa;return 1-bt*cf(1-xx,bb,aa)/bb}let tail=.5*ibeta(x,a,b);return Math.min(1,2*tail)}
-function biTTest(x,y){let d=x.map((v,i)=>v-y[i]),m=biMean(d),s=Math.sqrt(biVariance(d)),t=m/(s/Math.sqrt(d.length)),df=d.length-1;return{t,df,p:biTApproxP(t,df)}}
-function biBuildTable(ch){let html='<table class="bi-table"><thead><tr><th></th>'+ch.cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';ch.rows.forEach((r,i)=>{html+=`<tr><th>${r}</th>${ch.obs[i].map(v=>`<td>${v}</td>`).join('')}</tr>`});return html+'</tbody></table>'}
-
-function biFreqTable(a,name){let g=biGroups(a),N=a.length;return `<div class="bi-section"><h4>📋 Frequency Table — ${name}</h4><table class="bi-table"><thead><tr><th>Value / Category</th><th>Frequency</th><th>Relative Frequency</th><th>Percentage</th></tr></thead><tbody>${g.map(([v,c])=>`<tr><td>${v}</td><td>${c}</td><td>${biFmt(c/N)}</td><td>${biFmt(c*100/N)}%</td></tr>`).join('')}</tbody></table></div>`}
-function biScatter(x,y,n1,n2){let W=760,H=430,pad=58,cw=W-2*pad,ch=H-2*pad,xmin=Math.min(...x),xmax=Math.max(...x),ymin=Math.min(...y),ymax=Math.max(...y);if(xmax===xmin){xmin-=1;xmax+=1}if(ymax===ymin){ymin-=1;ymax+=1}let sx=v=>pad+(v-xmin)/(xmax-xmin)*cw,sy=v=>H-pad-(v-ymin)/(ymax-ymin)*ch;let pts=x.map((v,i)=>`${sx(v).toFixed(1)},${sy(y[i]).toFixed(1)}`).join(' ');let xTicks=5,yTicks=5;let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter plot"><rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>`;for(let i=0;i<=xTicks;i++){let v=xmin+(xmax-xmin)*i/xTicks,px=sx(v);svg+=`<line x1="${px}" y1="${pad}" x2="${px}" y2="${H-pad}" class="bi-gridline"/><text x="${px}" y="${H-pad+22}" text-anchor="middle" class="bi-axistext">${biFmt(v)}</text>`}for(let i=0;i<=yTicks;i++){let v=ymin+(ymax-ymin)*i/yTicks,py=sy(v);svg+=`<line x1="${pad}" y1="${py}" x2="${W-pad}" y2="${py}" class="bi-gridline"/><text x="${pad-10}" y="${py+4}" text-anchor="end" class="bi-axistext">${biFmt(v)}</text>`}svg+=`<line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" class="bi-axis"/><line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" class="bi-axis"/><polyline points="${pts}" fill="none" stroke="none"/>`;x.forEach((v,i)=>{svg+=`<circle cx="${sx(v)}" cy="${sy(y[i])}" r="5" class="bi-point"><title>${n1}: ${v}, ${n2}: ${y[i]}</title></circle>`});svg+=`<text x="${W/2}" y="${H-10}" text-anchor="middle" class="bi-label">${n1}</text><text x="16" y="${H/2}" text-anchor="middle" transform="rotate(-90 16 ${H/2})" class="bi-label">${n2}</text></svg>`;return `<div class="bi-section"><h4>📈 Scatter Plot</h4><div class="bi-chart-wrap">${svg}</div></div>`}
-function biVisualize(t1,t2,tok1,tok2,n1,n2){let v='';v+=biFreqTable(tok1,n1)+biFreqTable(tok2,n2);if(t1==='Numerical'&&t2==='Numerical')v+=biScatter(tok1.map(Number),tok2.map(Number),n1,n2);return v}
-
+function biKendall(x,y){let C=0,D=0,Tx=0,Ty=0;for(let i=0;i<x.length;i++)for(let j=i+1;j<x.length;j++){const dx=Math.sign(x[j]-x[i]),dy=Math.sign(y[j]-y[i]);if(dx===0&&dy===0)continue;if(dx===0)Tx++;else if(dy===0)Ty++;else if(dx===dy)C++;else D++;}const den=Math.sqrt((C+D+Tx)*(C+D+Ty));return den? (C-D)/den:NaN}
+function biRegression(x,y){const mx=biMean(x),my=biMean(y);let sxx=0,sxy=0;for(let i=0;i<x.length;i++){sxx+=(x[i]-mx)**2;sxy+=(x[i]-mx)*(y[i]-my)}const b=sxy/sxx,a=my-b*mx,r=biPearson(x,y);return{a,b,r,r2:r*r,sxx}}
+function biPartial(x,y,z){const rxy=biPearson(x,y),rxz=biPearson(x,z),ryz=biPearson(y,z);const den=Math.sqrt((1-rxz**2)*(1-ryz**2));return{r:(rxy-rxz*ryz)/den,rxy,rxz,ryz}}
+function biPFromT(t,df){if(!Number.isFinite(t)||df<=0)return NaN;const z=Math.abs(t);if(df>100)return 2*(1-(0.5*(1+erf(z/Math.sqrt(2)))));const approx=2*(1-(0.5*(1+erf(z/Math.sqrt(2)))));return Math.min(1,approx*Math.sqrt((df+1)/(df+0.5)))}
+function biCorrelationP(r,n){if(!Number.isFinite(r)||Math.abs(r)>=1||n<3)return Math.abs(r)>=1?0:NaN;const t=r*Math.sqrt((n-2)/(1-r*r));return biPFromT(t,n-2)}
+function biGroups(a){const m=new Map();a.forEach(v=>m.set(v,(m.get(v)||0)+1));return [...m.entries()]}
+function biFreqTable(a,name){const g=biGroups(a),N=a.length;return `<div class="bi-section"><h4>Frequency Table — ${name}</h4><table class="bi-table"><thead><tr><th>Value / Category</th><th>Frequency</th><th>Relative Frequency</th><th>Percentage</th></tr></thead><tbody>${g.map(([v,c])=>`<tr><td>${v}</td><td>${c}</td><td>${biFmt(c/N)}</td><td>${biFmt(c*100/N)}%</td></tr>`).join('')}</tbody></table></div>`}
+function biScatter(x,y,n1,n2,reg){let W=760,H=430,pad=58,xmin=Math.min(...x),xmax=Math.max(...x),ymin=Math.min(...y),ymax=Math.max(...y);if(xmax===xmin){xmin--;xmax++}if(ymax===ymin){ymin--;ymax++}const sx=v=>pad+(v-xmin)/(xmax-xmin)*(W-2*pad),sy=v=>H-pad-(v-ymin)/(ymax-ymin)*(H-2*pad);let svg=`<svg viewBox="0 0 ${W} ${H}" role="img"><line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" class="bi-axis"/><line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" class="bi-axis"/>`;x.forEach((v,i)=>svg+=`<circle cx="${sx(v)}" cy="${sy(y[i])}" r="5" class="bi-point"><title>${n1}: ${v}, ${n2}: ${y[i]}</title></circle>`);if(reg){const xa=xmin,xb=xmax;svg+=`<line x1="${sx(xa)}" y1="${sy(reg.a+reg.b*xa)}" x2="${sx(xb)}" y2="${sy(reg.a+reg.b*xb)}" class="bi-regline"/>`}svg+=`<text x="${W/2}" y="${H-10}" text-anchor="middle" class="bi-label">${n1}</text><text x="16" y="${H/2}" text-anchor="middle" transform="rotate(-90 16 ${H/2})" class="bi-label">${n2}</text></svg>`;return `<div class="bi-section"><h4>Scatter Plot</h4><div class="bi-chart-wrap">${svg}</div></div>`}
+function biFormula(title,latex){return `<details class="bi-formula" open><summary>${title} — Formula / Law</summary><div class="bi-formula-body"><div class="formula-box">\\(${latex}\\)</div></div></details>`}
+function biResult(title,value,body,formula){const el=document.getElementById("biSelectedResult");if(!el)return;el.innerHTML=`<div class="bi-result-card"><h3>${title}</h3><div class="bi-result-value">${value}</div>${body||''}${biFormula("Formula / Law",formula)}</div>`;if(window.MathJax?.typesetPromise)window.MathJax.typesetPromise([el]).catch(()=>{});}
+function biApplicableOptions(t1,t2,tok1,tok2,t3,tok3){
+ let o=[];
+ const add=(id,name,desc)=>o.push(`<button type="button" class="bi-analysis-option" data-bi="${id}"><b>${name}</b><small>${desc}</small></button>`);
+ if(t1==='Numerical'&&t2==='Numerical'){
+   add('pearson',"Pearson's Product-Moment Correlation","Linear association");
+   add('spearman',"Spearman's Rank Correlation","Rank/monotonic association");
+   add('kendall',"Kendall's Tau","Rank association");
+   add('regression',"Simple Linear Regression","Model Y from X");
+   add('r2',"Coefficient of Determination (R²)","Explained variation");
+   add('scatter',"Scatter Plot","Visual relationship");
+   add('freq1',"Frequency Table — "+document.getElementById('biName1').value,"Frequency distribution");
+   add('freq2',"Frequency Table — "+document.getElementById('biName2').value,"Frequency distribution");
+   if(t3==='Numerical')add('partial',"Partial Correlation","Control for "+document.getElementById('biName3').value);
+ } else if(t1==='Categorical'&&t2==='Categorical'){
+   add('freq1',"Frequency Table — "+document.getElementById('biName1').value,"Frequency distribution");
+   add('freq2',"Frequency Table — "+document.getElementById('biName2').value,"Frequency distribution");
+   add('gamma',"Goodman–Kruskal's Gamma","Ordinal association");
+   add('somers',"Somers' D","Ordinal directional association");
+ } else {
+   add('freq1',"Frequency Table — "+document.getElementById('biName1').value,"Frequency distribution");
+   add('freq2',"Frequency Table — "+document.getElementById('biName2').value,"Frequency distribution");
+   add('pointbiserial',"Point-Biserial Correlation","Binary + numerical");
+ }
+ return o.join('');
+}
+function biBindOptions(){document.querySelectorAll('.bi-analysis-option').forEach(b=>b.onclick=()=>biShowTool(b.dataset.bi))}
+function biShowTool(id){const q=window.BI_CURRENT;if(!q)return;const {x,y,z,n1,n2,n3,t1,t2}=q;
+ if(id==='pearson'){const r=biPearson(x,y),p=biCorrelationP(r,x.length);biResult("Pearson's Product-Moment Correlation",biFmt(r),`<p class="bi-p">p-value = <b>${biFmt(p)}</b></p><p class="bi-p">${p<0.05?'Significant at the 5% level.':'Not significant at the 5% level.'}</p>`,`r=\\frac{n\\sum xy-(\\sum x)(\\sum y)}{\\sqrt{[n\\sum x^2-(\\sum x)^2][n\\sum y^2-(\\sum y)^2]}}`);}
+ else if(id==='spearman'){const r=biSpearman(x,y);biResult("Spearman's Rank Correlation (ρ)",biFmt(r),`<p class="bi-p">Rank differences are used to measure monotonic association.</p>`,`\\rho=1-\\frac{6\\sum d^2}{n(n^2-1)}`);}
+ else if(id==='kendall'){const r=biKendall(x,y);biResult("Kendall's Tau-b",biFmt(r),`<p class="bi-p">Based on concordant and discordant pairs, with tie adjustment.</p>`,`\\tau_b=\\frac{C-D}{\\sqrt{(C+D+T_x)(C+D+T_y)}}`);}
+ else if(id==='regression'){const g=biRegression(x,y);biResult("Simple Linear Regression",`ŷ = ${biFmt(g.a)} + (${biFmt(g.b)})X`,`<div class="bi-regression-grid"><div><span>Intercept (b₀)</span><strong>${biFmt(g.a)}</strong></div><div><span>Regression coefficient / slope (b₁)</span><strong>${biFmt(g.b)}</strong></div><div><span>R</span><strong>${biFmt(g.r)}</strong></div><div><span>R²</span><strong>${biFmt(g.r2)}</strong></div></div><p class="bi-p">Model: <b>ŷ = b₀ + b₁X</b></p>`,`\\hat{y}=b_0+b_1x,\\quad b_1=\\frac{\\sum(x-\\bar{x})(y-\\bar{y})}{\\sum(x-\\bar{x})^2},\\quad b_0=\\bar{y}-b_1\\bar{x}`);}
+ else if(id==='r2'){const r=biPearson(x,y);biResult("Coefficient of Determination (R²)",biFmt(r*r),`<p class="bi-p">${biFmt(r*r*100)}% of the variation in Y is associated with the linear model using X.</p>`,`R^2=r^2`);}
+ else if(id==='scatter'){biResult("Scatter Plot","",biScatter(x,y,n1,n2,biRegression(x,y)),`\\text{Plot of }(X,Y)\\text{ observations}`);}
+ else if(id==='freq1'){biResult("Frequency Table — "+n1,"",biFreqTable(x,n1),`\\text{Relative frequency}=\\frac{f}{n},\\quad\\text{Percentage}=\\frac{f}{n}\\times100`);}
+ else if(id==='freq2'){biResult("Frequency Table — "+n2,"",biFreqTable(y,n2),`\\text{Relative frequency}=\\frac{f}{n},\\quad\\text{Percentage}=\\frac{f}{n}\\times100`);}
+ else if(id==='partial'&&z){const g=biPartial(x,y,z);biResult("Partial Correlation",biFmt(g.r),`<div class="bi-regression-grid"><div><span>rXY</span><strong>${biFmt(g.rxy)}</strong></div><div><span>rXZ</span><strong>${biFmt(g.rxz)}</strong></div><div><span>rYZ</span><strong>${biFmt(g.ryz)}</strong></div></div>`,`r_{XY\\cdot Z}=\\frac{r_{XY}-r_{XZ}r_{YZ}}{\\sqrt{(1-r_{XZ}^2)(1-r_{YZ}^2)}}`);}
+ else if(id==='pointbiserial'){biResult("Point-Biserial Correlation","Applicable only when one variable is truly binary and the other is numerical.","<p class='bi-p'>Use a binary variable such as 0/1 or Yes/No.</p>","r_{pb}=\\frac{\\bar X_1-\\bar X_0}{s_X}\\sqrt{pq}");}
+ else if(id==='gamma'||id==='somers'){biResult(id==='gamma'?"Goodman–Kruskal's Gamma":"Somers' D","See formula","<p class='bi-p'>This option is available for categorical/ordinal data. Full ordinal-category calculation is required.</p>",id==='gamma'?"\\gamma=\\frac{C-D}{C+D}":"D_{Y\\mid X}=\\frac{C-D}{C+D+T_Y}");}
+}
 window.runBivariate=function(){
- let n1=document.getElementById('biName1')?.value.trim()||'Variable 1',n2=document.getElementById('biName2')?.value.trim()||'Variable 2',n3=document.getElementById('biName3')?.value.trim()||'Control Variable',raw1=document.getElementById('biData1')?.value||'',raw2=document.getElementById('biData2')?.value||'',raw3=document.getElementById('biData3')?.value||'',tok1=biTokens(raw1),tok2=biTokens(raw2),tok3=biTokens(raw3),out=document.getElementById('biResult'),det=document.getElementById('biDetected');
+ const n1=document.getElementById('biName1')?.value.trim()||'Variable 1',n2=document.getElementById('biName2')?.value.trim()||'Variable 2',n3=document.getElementById('biName3')?.value.trim()||'Control Variable';
+ const raw1=document.getElementById('biData1')?.value||'',raw2=document.getElementById('biData2')?.value||'',raw3=document.getElementById('biData3')?.value||'',tok1=biTokens(raw1),tok2=biTokens(raw2),tok3=biTokens(raw3),out=document.getElementById('biResult'),det=document.getElementById('biDetected');
  if(!out||!det)return;
- if(tok1.length<2||tok2.length<2){det.innerHTML='<span class="bi-warn">Please enter at least two observations for each main variable.</span>';out.innerHTML='';return}
- if(tok1.length!==tok2.length){det.innerHTML='<span class="bi-warn">Variable 1 and Variable 2 must have the same number of observations.</span>';out.innerHTML='';return}
- let t1=biNum(raw1)?'Numerical':'Categorical',t2=biNum(raw2)?'Numerical':'Categorical',t3=raw3.trim()?(biNum(raw3)?'Numerical':'Categorical'):'';
- if(raw3.trim()&&tok3.length!==tok1.length){det.innerHTML='<span class="bi-warn">The control variable must have the same number of observations as Variable 1 and Variable 2.</span>';out.innerHTML='';return}
- if(raw3.trim()&&t3!=='Numerical'){det.innerHTML='<span class="bi-warn">Partial Correlation requires a numerical control variable.</span>';out.innerHTML='';return}
- let x=t1==='Numerical'?tok1.map(Number):tok1,y=t2==='Numerical'?tok2.map(Number):tok2,z=t3==='Numerical'?tok3.map(Number):null;
- BI_CURRENT={x,y,z,n1,n2,n3,t1,t2,t3};
- let detected=`<b>Detected:</b> ${n1} → ${t1} &nbsp; | &nbsp; ${n2} → ${t2}`;
- if(t3)detected+=` &nbsp; | &nbsp; ${n3} → ${t3}`;
- detected+=` &nbsp; | &nbsp; n = ${tok1.length}<br><small>Choose an applicable tool below. Results appear only after you click a tool.</small>`;
- det.innerHTML=detected;
- let opts=biApplicableOptions(t1,t2,tok1,tok2,t3,tok3);
- out.innerHTML=`<div class="bi-section"><h4>🔗 Applicable Tools</h4><div class="bi-options">${opts}</div><div id="biSelectedResult" class="bi-selected-result"><p class="bi-note">No result is shown automatically. Click a tool above.</p></div></div>`;
- biRefreshMath(out);
+ if(tok1.length<2||tok2.length<2){det.innerHTML='<span class="bi-warn">Please enter at least two observations for each main variable.</span>';out.innerHTML='';return;}
+ if(tok1.length!==tok2.length){det.innerHTML='<span class="bi-warn">Variable 1 and Variable 2 must have the same number of observations.</span>';out.innerHTML='';return;}
+ const t1=biNum(raw1)?'Numerical':'Categorical',t2=biNum(raw2)?'Numerical':'Categorical',t3=raw3.trim()?(biNum(raw3)?'Numerical':'Categorical'):'';
+ if(raw3.trim()&&tok3.length!==tok1.length){det.innerHTML='<span class="bi-warn">The control variable must have the same number of observations as the main variables.</span>';out.innerHTML='';return;}
+ if(raw3.trim()&&t3!=='Numerical'){det.innerHTML='<span class="bi-warn">Partial Correlation requires a numerical control variable.</span>';out.innerHTML='';return;}
+ const x=t1==='Numerical'?tok1.map(Number):tok1,y=t2==='Numerical'?tok2.map(Number):tok2,z=t3==='Numerical'?tok3.map(Number):null;
+ window.BI_CURRENT={x,y,z,n1,n2,n3,t1,t2,t3};
+ let detected=`<b>Detected:</b> ${n1} → ${t1} &nbsp; | &nbsp; ${n2} → ${t2} &nbsp; | &nbsp; n = ${tok1.length}`;if(t3)detected+=` &nbsp; | &nbsp; ${n3} → ${t3}`;det.innerHTML=detected;
+ out.innerHTML=`<div class="bi-section"><h4>Applicable Tools</h4><div class="bi-options">${biApplicableOptions(t1,t2,tok1,tok2,t3,tok3)}</div><div id="biSelectedResult" class="bi-selected-result"><p class="bi-note">Click an applicable tool to view only that tool's value and formula.</p></div></div>`;
+ biBindOptions();
 }
 if(document.getElementById('biData1'))window.runBivariate();
