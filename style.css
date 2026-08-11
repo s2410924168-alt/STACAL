@@ -46,3 +46,7 @@ body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f7f9fc;col
 
 .desc-detail{margin-top:16px}.desc-detail h4{margin:12px 0}.desc-detail .bi-table{margin-bottom:14px}
 .desc-graphs{margin-top:24px}.desc-graph-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.desc-graph{border:1px solid #d8e0eb;border-radius:12px;padding:14px;background:#fff}.desc-graph h4{margin:0 0 10px}.desc-graph svg{width:100%;height:auto;display:block}.desc-graph .bi-axis{stroke:currentColor;stroke-width:1.5}.desc-graph .bi-bar{fill:currentColor;opacity:.22;stroke:currentColor}.desc-graph .bi-point{fill:currentColor;stroke:currentColor}.desc-graph .bi-regline{stroke:currentColor;stroke-width:2;fill:none}.graph-note{font-size:.9rem;opacity:.75}.stemleaf{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.8;padding:12px;border:1px dashed #d8e0eb;border-radius:8px}.stemleaf small{display:block;margin-top:10px;font-family:inherit}@media(max-width:800px){.desc-graph-grid{grid-template-columns:1fr}}
+.bi-comment{margin:14px 0;padding:12px 14px;border-left:4px solid currentColor;border-radius:8px;background:rgba(0,0,0,.035);line-height:1.55}
+.bi-type-confirm{margin:10px 0;padding:12px 14px;border:1px solid #d8e0eb;border-radius:10px;background:#f8fafc;line-height:1.6}
+.bi-type-confirm button{margin:7px 6px 0 0;padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer}
+.bi-type-confirm button:hover{filter:brightness(.97)}
