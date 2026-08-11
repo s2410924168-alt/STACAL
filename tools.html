@@ -19,9 +19,28 @@
 <div><label><b>Variable 1 data</b></label><textarea id="biData1" class="bi-textarea" placeholder="2, 3, 4, 5, 6">2, 3, 4, 5, 6, 7, 8, 9</textarea></div>
 <div><label><b>Variable 2 data</b></label><textarea id="biData2" class="bi-textarea" placeholder="45, 50, 58, 65, 72">45, 50, 58, 65, 72, 78, 84, 90</textarea></div>
 </div>
-<div class="bi-actions"><button class="btn" onclick="runBivariate()">Analyze Automatically</button><button class="btn secondary" onclick="loadBiExample()">Load Examples</button><button class="btn secondary" onclick="printBiReport()">🖨️ PDF / Print Report</button><button class="btn secondary" onclick="exportBiCSV()">⬇️ Export CSV</button></div>
+<div class="bi-actions"><button type="button" id="runBivariateBtn" class="btn">Analyze Automatically</button><button class="btn secondary" onclick="loadBiExample()">Load Examples</button><button class="btn secondary" onclick="printBiReport()">🖨️ PDF / Print Report</button><button class="btn secondary" onclick="exportBiCSV()">⬇️ Export CSV</button></div>
 <div class="bi-upload"><label><b>Optional: Upload CSV/XLSX for multi-variable analysis</b></label><input id="biFile" type="file" accept=".csv,.xlsx,.xls" onchange="handleBiFile(this)"><small>For two-column files, the first two columns are used for bivariate analysis. With 3+ numeric columns, a correlation matrix is also generated.</small></div>
 <div id="biDetected" class="bi-detected"></div><div id="biResult"></div><div id="biVisuals"></div>
 </div></div>
 </div></main>
-<footer class="footer"><span>Statistical Hub</span><span>Tools</span></footer><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><script src="script.js"></script></body></html>
+<footer class="footer"><span>Statistical Hub</span><span>Tools</span></footer><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><script src="script.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const btn = document.getElementById("runBivariateBtn");
+  if (btn) btn.addEventListener("click", function (e) {
+    e.preventDefault();
+    try {
+      if (typeof window.runBivariate === "function") window.runBivariate();
+      else {
+        const d = document.getElementById("biDetected");
+        if (d) d.innerHTML = '<span class="bi-warn">Analysis module could not be loaded. Please refresh the page.</span>';
+      }
+    } catch (err) {
+      console.error("Bivariate analysis error:", err);
+      const d = document.getElementById("biDetected");
+      if (d) d.innerHTML = '<span class="bi-warn">Could not analyze this input. Please check that both variables contain valid data of the same length.</span>';
+    }
+  });
+});
+</script></body></html>
