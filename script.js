@@ -74,6 +74,12 @@ function descGraphs(a){
  </div><p class="graph-note">Graphs are generated automatically from the entered observations. For continuous data, histogram/frequency polygon/ogive use automatically selected class intervals; bar and pie charts use distinct observed values.</p></div>`;
 }
 
+function parseClassIntervals(raw,a){
+ const parts=String(raw||'').split(',').map(s=>s.trim()).filter(Boolean), out=[];
+ for(const part of parts){const m=part.match(/^\s*(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)(?:\s*:\s*(\d+(?:\.\d+)?))?\s*$/);if(!m)continue;const lo=Number(m[1]),hi=Number(m[2]);if(!(hi>lo))continue;const supplied=m[3]!=null?Number(m[3]):null;const f=supplied!=null?supplied:a.filter(v=>v>=lo&&v<(hi===Math.max(...a)?hi+1e-12:hi)).length;out.push({lo,hi,f,label:`${lo}–${hi}`});}
+ if(out.length){const last=out[out.length-1];const mx=Math.max(...a);if(last.hi>=mx)last.f=last.f;}return out;
+}
+function classIntervalTable(raw,a){const cs=parseClassIntervals(raw,a);if(!cs.length)return '';return `<div class="desc-detail"><h4>Class-Interval Frequency Table</h4><table class="bi-table"><thead><tr><th>Class Interval</th><th>Frequency</th><th>Relative Frequency</th><th>Percentage</th></tr></thead><tbody>${cs.map(c=>`<tr><td>${c.label}</td><td>${c.f}</td><td>${(c.f/a.length).toFixed(5)}</td><td>${(c.f*100/a.length).toFixed(2)}%</td></tr>`).join('')}</tbody></table><p class="graph-note">Syntax used: <b>10-20, 20-30, 30-40</b> or with frequencies <b>10-20:5, 20-30:8, 30-40:12</b>.</p></div>`;}
 function calcDesc(){
  const el=document.getElementById("data"); if(!el)return;
  const a=nums(el.value.replace(/[\s;\n\t]+/g,","));
@@ -107,7 +113,7 @@ function calcDesc(){
  <details class="bi-formula"><summary>Show formulas / laws</summary><div class="bi-formula-body">
  <div class="formula-box">\\(\\bar{x}=\\frac{\\sum x}{n}\\)</div><div class="formula-box">\\(s^2=\\frac{\\sum(x-\\bar{x})^2}{n-1}\\)</div><div class="formula-box">\\(s=\\sqrt{s^2}\\)</div><div class="formula-box">\\(SE(\\bar{x})=\\frac{s}{\\sqrt n}\\)</div>
  <div class="formula-box">\\(\\mu'_r=\\frac{1}{n}\\sum x^r\\)</div><div class="formula-box">\\(\\mu_r=\\frac{1}{n}\\sum(x-\\bar{x})^r\\)</div><div class="formula-box">\\(\\text{Skewness}=\\frac{\\mu_3}{\\mu_2^{3/2}}\\)</div><div class="formula-box">\\(\\text{Kurtosis}=\\frac{\\mu_4}{\\mu_2^2}\\)</div>
- </div></details></div>${descGraphs(a)}`;
+ </div></details></div>${classIntervalTable(document.getElementById("classIntervals")?.value,a)}${descGraphs(a)}`;
  if(window.MathJax?.typesetPromise)window.MathJax.typesetPromise([out]).catch(()=>{});
 }
 
@@ -303,28 +309,37 @@ function biFreqTable(a,name){const g=biGroups(a),N=a.length;return `<div class="
 function biScatter(x,y,n1,n2,reg){let W=760,H=430,pad=58,xmin=Math.min(...x),xmax=Math.max(...x),ymin=Math.min(...y),ymax=Math.max(...y);if(xmax===xmin){xmin--;xmax++}if(ymax===ymin){ymin--;ymax++}const sx=v=>pad+(v-xmin)/(xmax-xmin)*(W-2*pad),sy=v=>H-pad-(v-ymin)/(ymax-ymin)*(H-2*pad);let svg=`<svg viewBox="0 0 ${W} ${H}" role="img"><line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" class="bi-axis"/><line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" class="bi-axis"/>`;x.forEach((v,i)=>svg+=`<circle cx="${sx(v)}" cy="${sy(y[i])}" r="5" class="bi-point"><title>${n1}: ${v}, ${n2}: ${y[i]}</title></circle>`);if(reg){const xa=xmin,xb=xmax;svg+=`<line x1="${sx(xa)}" y1="${sy(reg.a+reg.b*xa)}" x2="${sx(xb)}" y2="${sy(reg.a+reg.b*xb)}" class="bi-regline"/>`}svg+=`<text x="${W/2}" y="${H-10}" text-anchor="middle" class="bi-label">${n1}</text><text x="16" y="${H/2}" text-anchor="middle" transform="rotate(-90 16 ${H/2})" class="bi-label">${n2}</text></svg>`;return `<div class="bi-section"><h4>Scatter Plot</h4><div class="bi-chart-wrap">${svg}</div></div>`}
 function biFormula(title,latex){return `<details class="bi-formula" open><summary>${title} — Formula / Law</summary><div class="bi-formula-body"><div class="formula-box">\\(${latex}\\)</div></div></details>`}
 function biResult(title,value,body,formula){const el=document.getElementById("biSelectedResult");if(!el)return;el.innerHTML=`<div class="bi-result-card"><h3>${title}</h3><div class="bi-result-value">${value}</div>${body||''}${biFormula("Formula / Law",formula)}</div>`;if(window.MathJax?.typesetPromise)window.MathJax.typesetPromise([el]).catch(()=>{});}
+function biIsBinary(a){const u=[...new Set(a.map(v=>String(v)))];return u.length===2;}
+function biGroups2(a){const u=[...new Set(a.map(v=>String(v)))];return u.length===2?u:null;}
+function biContingency(a,b){const ra=[...new Set(a.map(v=>String(v)))], cb=[...new Set(b.map(v=>String(v)))];const rows=ra.map(r=>cb.map(c=>a.reduce((s,v,i)=>s+(String(v)===r&&String(b[i])===c?1:0),0)));return{ra,cb,rows};}
+function biChiSquare(a,b){const q=biContingency(a,b),R=q.rows.length,C=q.cb.length,N=a.length,row=q.rows.map(r=>r.reduce((s,v)=>s+v,0)),col=q.cb.map((_,j)=>q.rows.reduce((s,r)=>s+r[j],0));let chi=0;for(let i=0;i<R;i++)for(let j=0;j<C;j++){const e=row[i]*col[j]/N;if(e>0)chi+=(q.rows[i][j]-e)**2/e;}return{chi,df:(R-1)*(C-1),q};}
+function regLowerGamma(s,x){if(x<=0)return 0;let sum=1/s,term=sum;for(let n=1;n<100;n++){term*=x/(s+n);sum+=term;if(Math.abs(term)<Math.abs(sum)*1e-12)break;}return Math.exp(-x+s*Math.log(x)-logGamma(s))*sum;}
+function regUpperGamma(s,x){if(x<=0)return 1; if(x<s+1)return 1-regLowerGamma(s,x);let b=x+1-s,c=1e-300,d=1/b,h=d;for(let i=1;i<200;i++){let an=-i*(i-s),bb=b+2*i;d=an*d+bb;if(Math.abs(d)<1e-300)d=1e-300;c=bb+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<1e-12)break;}return Math.exp(-x+s*Math.log(x)-logGamma(s))*h;}
+function biChiP(chi,df){return Number.isFinite(chi)&&df>0?regUpperGamma(df/2,chi/2):NaN;}
+function biTwoGroupStats(a,b){const u=[...new Set(a.map(v=>String(v)))];if(u.length!==2)return null;const g1=[],g2=[];a.forEach((v,i)=>{(String(v)===u[0]?g1:g2).push(Number(b[i]))});return{u,g1,g2};}
+function biTTest(g1,g2,welch=false){const n1=g1.length,n2=g2.length,m1=biMean(g1),m2=biMean(g2),v1=g1.reduce((s,x)=>s+(x-m1)**2,0)/(n1-1),v2=g2.reduce((s,x)=>s+(x-m2)**2,0)/(n2-1);if(welch){const se=Math.sqrt(v1/n1+v2/n2),t=(m1-m2)/se,df=(v1/n1+v2/n2)**2/((v1/n1)**2/(n1-1)+(v2/n2)**2/(n2-1));return{t,df,p:biPFromT(t,df),m1,m2,v1,v2};}const sp2=((n1-1)*v1+(n2-1)*v2)/(n1+n2-2),se=Math.sqrt(sp2*(1/n1+1/n2)),t=(m1-m2)/se,df=n1+n2-2;return{t,df,p:biPFromT(t,df),m1,m2,v1,v2,sp2};}
+function biPaired(a,b){const d=a.map((v,i)=>Number(v)-Number(b[i]));const md=biMean(d),sd=Math.sqrt(d.reduce((s,x)=>s+(x-md)**2,0)/(d.length-1)),t=md/(sd/Math.sqrt(d.length)),df=d.length-1;return{t,df,p:biPFromT(t,df),md,sd};}
+function biMannWhitney(g1,g2){const all=g1.map(v=>({v:Number(v),g:1})).concat(g2.map(v=>({v:Number(v),g:2}))).sort((a,b)=>a.v-b.v);let i=0,r1=0,ranks=[];while(i<all.length){let j=i+1;while(j<all.length&&all[j].v===all[i].v)j++;const r=(i+1+j)/2;for(let k=i;k<j;k++)ranks[k]=r;i=j;}all.forEach((o,k)=>{if(o.g===1)r1+=ranks[k]});const n1=g1.length,n2=g2.length,U1=r1-n1*(n1+1)/2,U2=n1*n2-U1,U=Math.min(U1,U2),mu=n1*n2/2,sd=Math.sqrt(n1*n2*(n1+n2+1)/12),z=(U-mu+0.5)/sd,p=biPFromT(z,1e6);return{U,z,p,n1,n2};}
+function biWilcoxon(a,b){const d=a.map((v,i)=>Number(v)-Number(b[i])).filter(v=>v!==0);const abs=d.map(v=>Math.abs(v)).sort((x,y)=>x-y);let Wp=0,Wm=0;for(const v of d){let r=abs.indexOf(Math.abs(v))+1;if(v>0)Wp+=r;else Wm+=r;}const W=Math.min(Wp,Wm),n=d.length,mu=n*(n+1)/4,sd=Math.sqrt(n*(n+1)*(2*n+1)/24),z=(W-mu+0.5)/sd,p=biPFromT(z,1e6);return{W,z,p,n};}
+function biORRR(a,b){const q=biContingency(a,b);if(q.rows.length!==2||q.cb.length!==2)return null;const A=q.rows[0][0],B=q.rows[0][1],C=q.rows[1][0],D=q.rows[1][1];return{A,B,C,D,or:(A*D)/(B*C||1),rr:(A/(A+B||1))/(C/(C+D||1))};}
+function biANOVA(groups){const all=groups.flat(),N=all.length,k=groups.length,gm=biMean(all);let ssb=0,ssw=0;groups.forEach(g=>{const m=biMean(g);ssb+=g.length*(m-gm)**2;ssw+=g.reduce((s,x)=>s+(x-m)**2,0)});const df1=k-1,df2=N-k,msb=ssb/df1,mse=ssw/df2,F=msb/mse;return{ssb,ssw,df1,df2,msb,mse,F};}
 function biApplicableOptions(t1,t2,tok1,tok2,t3,tok3){
- let o=[];
- const add=(id,name,desc)=>o.push(`<button type="button" class="bi-analysis-option" data-bi="${id}"><b>${name}</b><small>${desc}</small></button>`);
- if(t1==='Numerical'&&t2==='Numerical'){
-   add('pearson',"Pearson's Product-Moment Correlation","Linear association");
-   add('spearman',"Spearman's Rank Correlation","Rank/monotonic association");
-   add('kendall',"Kendall's Tau","Rank association");
-   add('regression',"Simple Linear Regression","Model Y from X");
-   add('r2',"Coefficient of Determination (R²)","Explained variation");
-   add('scatter',"Scatter Plot","Visual relationship");
-   add('freq1',"Frequency Table — "+document.getElementById('biName1').value,"Frequency distribution");
-   add('freq2',"Frequency Table — "+document.getElementById('biName2').value,"Frequency distribution");
-   if(t3==='Numerical')add('partial',"Partial Correlation","Control for "+document.getElementById('biName3').value);
- } else if(t1==='Categorical'&&t2==='Categorical'){
-   add('freq1',"Frequency Table — "+document.getElementById('biName1').value,"Frequency distribution");
-   add('freq2',"Frequency Table — "+document.getElementById('biName2').value,"Frequency distribution");
-   add('gamma',"Goodman–Kruskal's Gamma","Ordinal association");
-   add('somers',"Somers' D","Ordinal directional association");
+ let o=[]; const add=(id,name,desc)=>o.push(`<button type="button" class="bi-analysis-option" data-bi="${id}"><b>${name}</b><small>${desc}</small></button>`);
+ const raw1=tok1,raw2=tok2;
+ if(t1==='Numerical'&&t2==='Numerical'&&!biIsBinary(tok1)&&!biIsBinary(tok2)){
+   add('pearson',"Pearson's Product-Moment Correlation","Linear association"); add('spearman',"Spearman's Rank Correlation","Rank/monotonic association"); add('kendall',"Kendall's Tau","Rank association");
+   add('regression','Simple Linear Regression','Model Y from X'); add('r2','Coefficient of Determination (R²)','Explained variation'); add('scatter','Scatter Plot','Visual relationship'); add('freq1','Frequency Table — '+document.getElementById('biName1').value,'Frequency distribution'); add('freq2','Frequency Table — '+document.getElementById('biName2').value,'Frequency distribution'); add('pairedttest','Paired Samples t-test','Paired observations'); add('wilcoxon','Wilcoxon Signed-Rank Test','Non-parametric paired comparison');
+   if(t3==='Numerical') add('partial','Partial Correlation','Control for '+document.getElementById('biName3').value);
+ } else if(t1==='Numerical'&&t2==='Numerical'&&biIsBinary(raw1)&&biIsBinary(raw2)){ add('crosstab','Cross-tabulation','Contingency table'); add('chisq','Chi-square Test of Independence','Association / independence'); add('fisher','Fisher’s Exact Test','2×2 tables, especially small samples'); add('cramerv','Cramer’s V','Association strength'); add('phi','Phi Coefficient','Binary × binary association'); add('oddsratio','Odds Ratio','2×2 association effect size'); add('rr','Relative Risk','2×2 risk ratio'); add('freq1','Frequency Table — '+document.getElementById('biName1').value,'Frequency distribution'); add('freq2','Frequency Table — '+document.getElementById('biName2').value,'Frequency distribution');
+ } else if(t1==='Numerical'&&t2==='Numerical'&&(biIsBinary(raw1)||biIsBinary(raw2))){ const cat=biIsBinary(raw1)?raw1:raw2, num=biIsBinary(raw1)?raw2:raw1; add('pointbiserial','Point-Biserial Correlation','Binary + numerical'); add('ttest','Independent Samples t-test','Two-group mean comparison'); add('welch','Welch’s t-test','Unequal-variance two-group comparison'); add('mannwhitney','Mann–Whitney U Test','Non-parametric two-group comparison'); add('freq1','Frequency Table — '+document.getElementById('biName1').value,'Frequency distribution'); add('freq2','Frequency Table — '+document.getElementById('biName2').value,'Frequency distribution');
+ } else if((t1==='Categorical'&&t2==='Categorical') || (biIsBinary(raw1)&&biIsBinary(raw2))){
+   add('crosstab','Cross-tabulation','Contingency table'); add('chisq','Chi-square Test of Independence','Association / independence'); add('fisher','Fisher’s Exact Test','2×2 tables, especially small samples'); add('cramerv','Cramer’s V','Association strength');
+   if(biIsBinary(raw1)&&biIsBinary(raw2)){add('phi','Phi Coefficient','Binary × binary association');add('oddsratio','Odds Ratio','2×2 association effect size');add('rr','Relative Risk','2×2 risk ratio');}
+   add('freq1','Frequency Table — '+document.getElementById('biName1').value,'Frequency distribution'); add('freq2','Frequency Table — '+document.getElementById('biName2').value,'Frequency distribution'); add('gamma',"Goodman–Kruskal's Gamma","Ordinal association"); add('somers',"Somers' D","Ordinal directional association");
  } else {
-   add('freq1',"Frequency Table — "+document.getElementById('biName1').value,"Frequency distribution");
-   add('freq2',"Frequency Table — "+document.getElementById('biName2').value,"Frequency distribution");
-   add('pointbiserial',"Point-Biserial Correlation","Binary + numerical");
+   const cat=t1==='Categorical'?raw1:raw2, num=t1==='Numerical'?raw1:raw2;
+   if(biIsBinary(cat)){add('pointbiserial','Point-Biserial Correlation','Binary + numerical');add('ttest','Independent Samples t-test','Two-group mean comparison');add('welch','Welch’s t-test','Unequal-variance two-group comparison');add('mannwhitney','Mann–Whitney U Test','Non-parametric two-group comparison');}
+   add('freq1','Frequency Table — '+document.getElementById('biName1').value,'Frequency distribution'); add('freq2','Frequency Table — '+document.getElementById('biName2').value,'Frequency distribution');
  }
  return o.join('');
 }
@@ -339,7 +354,17 @@ function biShowTool(id){const q=window.BI_CURRENT;if(!q)return;const {x,y,z,n1,n
  else if(id==='freq1'){biResult("Frequency Table — "+n1,"",biFreqTable(x,n1),`\\text{Relative frequency}=\\frac{f}{n},\\quad\\text{Percentage}=\\frac{f}{n}\\times100`);}
  else if(id==='freq2'){biResult("Frequency Table — "+n2,"",biFreqTable(y,n2),`\\text{Relative frequency}=\\frac{f}{n},\\quad\\text{Percentage}=\\frac{f}{n}\\times100`);}
  else if(id==='partial'&&z){const g=biPartial(x,y,z);biResult("Partial Correlation",biFmt(g.r),`<div class="bi-regression-grid"><div><span>rXY</span><strong>${biFmt(g.rxy)}</strong></div><div><span>rXZ</span><strong>${biFmt(g.rxz)}</strong></div><div><span>rYZ</span><strong>${biFmt(g.ryz)}</strong></div></div>`,`r_{XY\\cdot Z}=\\frac{r_{XY}-r_{XZ}r_{YZ}}{\\sqrt{(1-r_{XZ}^2)(1-r_{YZ}^2)}}`);}
+ else if(id==='pairedttest'){const r=biPaired(x,y);biResult('Paired Samples t-test',biFmt(r.t),`<p class="bi-p">df = <b>${r.df}</b>, p-value = <b>${biFmt(r.p)}</b>, mean difference = <b>${biFmt(r.md)}</b></p>`,'t=\\frac{\\bar d}{s_d/\\sqrt n}');}
+ else if(id==='wilcoxon'){const r=biWilcoxon(x,y);biResult('Wilcoxon Signed-Rank Test',biFmt(r.W),`<p class="bi-p">z = <b>${biFmt(r.z)}</b>, approximate p-value = <b>${biFmt(r.p)}</b>, non-zero pairs = <b>${r.n}</b></p>`,'W=\\min(W^+,W^-)');}
  else if(id==='pointbiserial'){biResult("Point-Biserial Correlation","Applicable only when one variable is truly binary and the other is numerical.","<p class='bi-p'>Use a binary variable such as 0/1 or Yes/No.</p>","r_{pb}=\\frac{\\bar X_1-\\bar X_0}{s_X}\\sqrt{pq}");}
+ else if(id==='crosstab'){const q=biContingency(x,y);let html='<table class="bi-table"><thead><tr><th></th>'+q.cb.map(c=>`<th>${c}</th>`).join('')+'<th>Total</th></tr></thead><tbody>'+q.rows.map((r,i)=>`<tr><th>${q.ra[i]}</th>${r.map(v=>`<td>${v}</td>`).join('')}<td>${r.reduce((s,v)=>s+v,0)}</td></tr>`).join('')+'</tbody></table>';biResult('Cross-tabulation','',html,'E_{ij}=\\frac{(Row_i)(Column_j)}{N}');}
+ else if(id==='chisq'){const g=biChiSquare(x,y);const p=biChiP(g.chi,g.df);biResult('Chi-square Test of Independence',biFmt(g.chi),`<p class="bi-p">df = <b>${g.df}</b> &nbsp; p-value = <b>${biFmt(p)}</b></p><p class="bi-p">${p<0.05?'Significant association at the 5% level.':'No significant association at the 5% level.'}</p>`,'\\chi^2=\\sum\\frac{(O-E)^2}{E},\\quad E=\\frac{(Row\\ Total)(Column\\ Total)}{Grand\\ Total}');}
+ else if(id==='fisher'){const q=biContingency(x,y);if(q.rows.length===2&&q.cb.length===2){const A=q.rows[0][0],B=q.rows[0][1],C=q.rows[1][0],D=q.rows[1][1],n=A+B+C+D;const logp=(logChoose(A+B,A)+logChoose(C+D,C)-logChoose(n,A+C));biResult('Fisher’s Exact Test',`OR = ${biFmt((A*D)/(B*C||1))}`,`<p class="bi-p">2×2 table detected. Exact hypergeometric probability is used for the observed table; for a full two-sided exact p-value, software implementation is recommended.</p>`,'P=\\frac{(A+B)!(C+D)!(A+C)!(B+D)!}{A!B!C!D!N!}');}else biResult('Fisher’s Exact Test','Not applicable','Requires a 2×2 contingency table.','P=\\frac{(A+B)!(C+D)!(A+C)!(B+D)!}{A!B!C!D!N!}');}
+ else if(id==='cramerv'){const g=biChiSquare(x,y),k=Math.min(g.q.rows.length,g.q.cb.length);biResult("Cramer's V",biFmt(Math.sqrt(g.chi/(x.length*(k-1)))),`<p class="bi-p">Based on the chi-square statistic and table dimensions.</p>`,'V=\\sqrt{\\frac{\\chi^2}{N(k-1)}}');}
+ else if(id==='phi'){const g=biChiSquare(x,y);biResult('Phi Coefficient',biFmt(Math.sqrt(g.chi/x.length)),`<p class="bi-p">For a 2×2 table.</p>`,`\\phi=\\sqrt{\\frac{\\chi^2}{N}}`);}
+ else if(id==='oddsratio'||id==='rr'){const g=biORRR(x,y);if(g)biResult(id==='oddsratio'?'Odds Ratio':'Relative Risk',biFmt(id==='oddsratio'?g.or:g.rr),`<p class="bi-p">2×2 table counts: A=${g.A}, B=${g.B}, C=${g.C}, D=${g.D}</p>`,id==='oddsratio'?'OR=\\frac{AD}{BC}':'RR=\\frac{A/(A+B)}{C/(C+D)}');}
+ else if(id==='ttest'||id==='welch'||id==='mannwhitney'){const cat=t1==='Categorical'?x:y,num=t1==='Numerical'?x:y,g=biTwoGroupStats(cat,num);if(!g){biResult(id==='ttest'?'Independent Samples t-test':id==='welch'?"Welch’s t-test":'Mann–Whitney U Test','Not applicable','The grouping variable must contain exactly two groups.','');}else if(id==='mannwhitney'){const r=biMannWhitney(g.g1,g.g2);biResult('Mann–Whitney U Test',biFmt(r.U),`<p class="bi-p">z = <b>${biFmt(r.z)}</b>, approximate p-value = <b>${biFmt(r.p)}</b></p>`,'U=R_1-\\frac{n_1(n_1+1)}{2}');}else{const r=biTTest(g.g1,g.g2,id==='welch');biResult(id==='welch'?"Welch’s t-test":'Independent Samples t-test',biFmt(r.t),`<p class="bi-p">df = <b>${biFmt(r.df)}</b>, p-value = <b>${biFmt(r.p)}</b></p><p class="bi-p">Group means: ${biFmt(r.m1)} and ${biFmt(r.m2)}</p>`,id==='welch'?'t=\\frac{\\bar X_1-\\bar X_2}{\\sqrt{s_1^2/n_1+s_2^2/n_2}}':'t=\\frac{\\bar X_1-\\bar X_2}{s_p\\sqrt{1/n_1+1/n_2}}');}}
+ else if(id==='pointbiserial'){const cat=t1==='Categorical'?x:y,num=t1==='Numerical'?x:y,g=biTwoGroupStats(cat,num);if(g){const all=num,m=biMean(all),sd=Math.sqrt(all.reduce((s,v)=>s+(v-m)**2,0)/(all.length-1)),r=((biMean(g.g1)-biMean(g.g2))/sd)*Math.sqrt(g.g1.length*g.g2.length/(all.length**2));biResult('Point-Biserial Correlation',biFmt(r),`<p class="bi-p">Two binary groups detected.</p>`,'r_{pb}=\\frac{\\bar X_1-\\bar X_0}{s_X}\\sqrt{pq}');}}
  else if(id==='gamma'||id==='somers'){biResult(id==='gamma'?"Goodman–Kruskal's Gamma":"Somers' D","See formula","<p class='bi-p'>This option is available for categorical/ordinal data. Full ordinal-category calculation is required.</p>",id==='gamma'?"\\gamma=\\frac{C-D}{C+D}":"D_{Y\\mid X}=\\frac{C-D}{C+D+T_Y}");}
 }
 window.runBivariate=function(){
