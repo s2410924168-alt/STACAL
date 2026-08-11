@@ -7,12 +7,20 @@
 <a href="index.html">🏠 Home</a><a href="tools.html">📊 Statistical Tools</a><a href="distributions.html">🎲 Distributions</a><a href="formulas.html">∑ Formulas</a><a href="about.html">ⓘ About</a>
 </nav>
 <main class="page"><div class="container"><div class="page-title"><div class="tag">TOOLS</div><h1>Statistical Tools</h1><p>Practical calculators for common statistical analysis.</p></div>
-<div class="cards tools-single">
-<div class="card graph-tool-card">
-<div class="tool-icon">📈</div>
-<h3>Data Visualization — All Graphs</h3>
-<p>Enter your data once and generate Histogram, Frequency Polygon, Cumulative Curve (Ogive), Pie Chart, Boxplot, Stem-and-Leaf Plot and Bar Chart automatically.</p>
-<a class="btn" href="graphs.html">Open Data Visualization →</a>
+<div class="cards tools-single"><div class="card"><h3>Descriptive Statistics</h3><p>Enter comma-separated observations to calculate sample size, mean, median, mode, variance, standard deviation, quartiles and range.</p><input id="data" value="12, 15, 18, 20, 25, 30" style="width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:10px"><br><br><button class="btn" onclick="calcDesc()">Calculate</button><div id="descResult"></div></div>
+<div class="cards tools-single" style="margin-top:24px"><div class="card bivariate-card">
+<h3>🔗 Bivariate Analysis — Auto Analysis</h3>
+<p>Enter exactly two variables. Statistical Hub automatically detects whether each variable is numerical or categorical and shows only the analyses that are applicable.</p>
+<div class="bi-input-grid">
+<div><label><b>Variable 1 name</b></label><input id="biName1" value="Study Hours" class="bi-input"></div>
+<div><label><b>Variable 2 name</b></label><input id="biName2" value="Marks" class="bi-input"></div>
 </div>
-<div class="card"><h3>Descriptive Statistics</h3><p>Enter comma-separated observations to calculate sample size, mean, median, mode, variance, standard deviation, quartiles and range.</p><input id="data" value="12, 15, 18, 20, 25, 30" style="width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:10px"><br><br><button class="btn" onclick="calcDesc()">Calculate</button><div id="descResult"></div></div></div></div></main>
+<div class="bi-input-grid">
+<div><label><b>Variable 1 data</b></label><textarea id="biData1" class="bi-textarea" placeholder="2, 3, 4, 5, 6">2, 3, 4, 5, 6, 7, 8, 9</textarea></div>
+<div><label><b>Variable 2 data</b></label><textarea id="biData2" class="bi-textarea" placeholder="45, 50, 58, 65, 72">45, 50, 58, 65, 72, 78, 84, 90</textarea></div>
+</div>
+<div class="bi-actions"><button class="btn" onclick="runBivariate()">Analyze Automatically</button><button class="btn secondary" onclick="loadBiExample()">Load Examples</button></div>
+<div id="biDetected" class="bi-detected"></div><div id="biResult"></div>
+</div></div>
+</div></main>
 <footer class="footer"><span>Statistical Hub</span><span>Tools</span></footer><script src="script.js"></script></body></html>
