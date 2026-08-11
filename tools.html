@@ -19,6 +19,10 @@
 <div><label><b>Variable 1 data</b></label><textarea id="biData1" class="bi-textarea" placeholder="2, 3, 4, 5, 6">2, 3, 4, 5, 6, 7, 8, 9</textarea></div>
 <div><label><b>Variable 2 data</b></label><textarea id="biData2" class="bi-textarea" placeholder="45, 50, 58, 65, 72">45, 50, 58, 65, 72, 78, 84, 90</textarea></div>
 </div>
+<div class="bi-input-grid">
+<div><label><b>Control variable for Partial Correlation (optional)</b></label><input id="biName3" value="" class="bi-input" placeholder="e.g. IQ / Age / Income"></div>
+<div><label><b>Control variable data</b></label><textarea id="biData3" class="bi-textarea" placeholder="Leave blank unless you want Partial Correlation."></textarea></div>
+</div>
 <div class="bi-actions"><button type="button" id="runBivariateBtn" class="btn">Analyze Automatically</button><button class="btn secondary" onclick="loadBiExample()">Load Examples</button></div>
 <div class="bi-upload"><label><b>Optional: Upload CSV/XLSX for multi-variable analysis</b></label><input id="biFile" type="file" accept=".csv,.xlsx,.xls" onchange="handleBiFile(this)"><small>For two-column files, the first two columns are used for bivariate analysis. With 3+ numeric columns, a correlation matrix is also generated.</small></div>
 <div id="biDetected" class="bi-detected"></div><div id="biResult"></div>
@@ -43,4 +47,5 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+if(window.MathJax?.typesetPromise){window.addEventListener("load",()=>window.MathJax.typesetPromise().catch(()=>{}));}
 </script></body></html>
