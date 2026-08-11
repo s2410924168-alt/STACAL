@@ -25,97 +25,68 @@ function menuInit(){const b=document.querySelector(".menu-btn"),m=document.query
 function nums(v){return v.split(",").map(Number).filter(Number.isFinite)} function mean(a){return a.reduce((s,x)=>s+x,0)/a.length}
 function median(a){a=[...a].sort((x,y)=>x-y);return a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2}
 function sd(a){let m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1))}
-function descGraphs(a){
- const sorted=[...a].sort((x,y)=>x-y), n=a.length;
- const freq=new Map(); sorted.forEach(x=>freq.set(x,(freq.get(x)||0)+1));
- const vals=[...freq.keys()], fs=[...freq.values()];
- const min=sorted[0], max=sorted[n-1];
- const bins=Math.max(3,Math.min(10,Math.ceil(Math.sqrt(n))));
- const width=max===min?1:(max-min)/bins;
- const edges=Array.from({length:bins+1},(_,i)=>min+i*width);
- const counts=Array(bins).fill(0); a.forEach(x=>{let j=max===min?0:Math.min(bins-1,Math.floor((x-min)/width));counts[j]++});
- const W=720,H=360,p=52;
- const sx=(x,x0=min,x1=max===min?min+1:max)=>p+(x-x0)/(x1-x0)*(W-2*p);
- const maxF=Math.max(...counts, ...fs, 1);
- const sy=f=>H-p-f/maxF*(H-2*p);
- const axis=`<line x1="${p}" y1="${H-p}" x2="${W-p}" y2="${H-p}" class="bi-axis"/><line x1="${p}" y1="${p}" x2="${p}" y2="${H-p}" class="bi-axis"/>`;
- const title=t=>`<h4>${t}</h4>`;
- // Histogram
- let hist=axis;
- counts.forEach((c,i)=>{const x0=edges[i],x1=edges[i+1],rx=sx(x0),rw=sx(x1)-rx;hist+=`<rect x="${rx}" y="${sy(c)}" width="${Math.max(1,rw-1)}" height="${H-p-sy(c)}" class="bi-bar"><title>Class ${i+1}: ${c}</title></rect>`});
- hist+=`<text x="${W/2}" y="${H-10}" text-anchor="middle" class="bi-label">Value</text><text x="16" y="${H/2}" text-anchor="middle" transform="rotate(-90 16 ${H/2})" class="bi-label">Frequency</text>`;
- // Frequency polygon
- let poly=axis; const pts=counts.map((c,i)=>`${sx((edges[i]+edges[i+1])/2)},${sy(c)}`).join(' '); poly+=`<polyline points="${pts}" fill="none" class="bi-regline"/>`;counts.forEach((c,i)=>poly+=`<circle cx="${sx((edges[i]+edges[i+1])/2)}" cy="${sy(c)}" r="4" class="bi-point"/>`);
- // Ogive cumulative curve
- let cum=0, ogPts=`${sx(min)},${sy(0)}`; counts.forEach((c,i)=>{cum+=c;ogPts+=` ${sx(edges[i+1])},${sy(cum)}`});
- let og=axis+`<polyline points="${ogPts}" fill="none" class="bi-regline"/>`; cum=0; counts.forEach((c,i)=>{cum+=c;og+=`<circle cx="${sx(edges[i+1])}" cy="${sy(cum)}" r="4" class="bi-point"/>`});
- // Boxplot
- const q=(arr,prob)=>{let pos=(arr.length-1)*prob,lo=Math.floor(pos),hi=Math.ceil(pos);return lo===hi?arr[lo]:arr[lo]+(arr[hi]-arr[lo])*(pos-lo)};
- const q1=q(sorted,.25),med=q(sorted,.5),q3=q(sorted,.75),iqr=q3-q1,lo=sorted.find(x=>x>=q1-1.5*iqr)??min,hi=[...sorted].reverse().find(x=>x<=q3+1.5*iqr)??max;
- const bxMin=min,bxMax=max===min?min+1:max,bsx=x=>p+(x-bxMin)/(bxMax-bxMin)*(W-2*p), cy=H/2;
- let box=axis+`<line x1="${bsx(lo)}" y1="${cy}" x2="${bsx(q1)}" y2="${cy}" class="bi-axis"/><line x1="${bsx(q3)}" y1="${cy}" x2="${bsx(hi)}" y2="${cy}" class="bi-axis"/><line x1="${bsx(lo)}" y1="${cy-22}" x2="${bsx(lo)}" y2="${cy+22}" class="bi-axis"/><line x1="${bsx(hi)}" y1="${cy-22}" x2="${bsx(hi)}" y2="${cy+22}" class="bi-axis"/><rect x="${bsx(q1)}" y="${cy-35}" width="${Math.max(2,bsx(q3)-bsx(q1))}" height="70" fill="none" class="bi-point"/><line x1="${bsx(med)}" y1="${cy-35}" x2="${bsx(med)}" y2="${cy+35}" class="bi-regline"/><text x="${W/2}" y="${H-10}" text-anchor="middle" class="bi-label">Value</text>`;
- // Stem and leaf
- const leaves=new Map(); sorted.forEach(x=>{const k=Math.floor(x/10), leaf=x-k*10;if(!leaves.has(k))leaves.set(k,[]);leaves.get(k).push(leaf)});
- let stem=`<div class="stemleaf"><div><b>Stem</b> | <b>Leaves</b></div>`;[...leaves.keys()].sort((a,b)=>a-b).forEach(k=>stem+=`<div>${k} | ${leaves.get(k).join(' ')}</div>`);stem+=`<small>Key: 4 | 5 = 45</small></div>`;
- // Bar chart and pie chart for distinct values
- const chartVals=vals.slice(0,20), chartFs=fs.slice(0,20), barMax=Math.max(...chartFs,1), bw=(W-2*p)/Math.max(chartVals.length,1);
- let bar=axis;chartVals.forEach((v,i)=>{const h=chartFs[i]/barMax*(H-2*p),x=p+i*bw+3;bar+=`<rect x="${x}" y="${H-p-h}" width="${Math.max(2,bw-6)}" height="${h}" class="bi-bar"><title>${v}: ${chartFs[i]}</title></rect><text x="${x+bw/2-3}" y="${H-p+18}" text-anchor="middle" class="bi-label">${String(v).slice(0,8)}</text>`});
- let pie=`<svg viewBox="0 0 420 320" role="img"><circle cx="210" cy="155" r="95" fill="none" class="bi-axis"/>`;
- const total=chartFs.reduce((s,x)=>s+x,0); let angle=-Math.PI/2; const cx=210,cy2=155,r=95;
- chartFs.forEach((f,i)=>{const a2=angle+2*Math.PI*f/total, x1=cx+r*Math.cos(angle),y1=cy2+r*Math.sin(angle),x2=cx+r*Math.cos(a2),y2=cy2+r*Math.sin(a2),large=(a2-angle)>Math.PI?1:0;pie+=`<path d="M ${cx} ${cy2} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="none" stroke="currentColor" stroke-width="${Math.max(8,Math.min(45,180*f/total))}" opacity="0.55"><title>${chartVals[i]}: ${(100*f/total).toFixed(2)}%</title></path>`;angle=a2});pie+=`<text x="210" y="300" text-anchor="middle" class="bi-label">Pie chart of frequencies</text></svg>`;
- return `<div class="desc-graphs"><h3>Graphs &amp; Visualizations</h3><div class="desc-graph-grid">
- <div class="desc-graph">${title('Histogram')}<svg viewBox="0 0 ${W} ${H}">${hist}</svg></div>
- <div class="desc-graph">${title('Frequency Polygon')}<svg viewBox="0 0 ${W} ${H}">${poly}</svg></div>
- <div class="desc-graph">${title('Cumulative Frequency Curve (Ogive)')}<svg viewBox="0 0 ${W} ${H}">${og}</svg></div>
- <div class="desc-graph">${title('Boxplot')}<svg viewBox="0 0 ${W} ${H}">${box}</svg></div>
- <div class="desc-graph">${title('Bar Chart')}<svg viewBox="0 0 ${W} ${H}">${bar}</svg></div>
- <div class="desc-graph">${title('Pie Chart')}${pie}</div>
- <div class="desc-graph">${title('Stem-and-Leaf Plot')}${stem}</div>
- </div><p class="graph-note">Graphs are generated automatically from the entered observations. For continuous data, histogram/frequency polygon/ogive use automatically selected class intervals; bar and pie charts use distinct observed values.</p></div>`;
+function descEsc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function descNum(v){const n=Number(v);return Number.isFinite(n)?n:NaN;}
+function descGroupsFromRaw(a,k){
+ const sorted=[...a].sort((x,y)=>x-y), min=sorted[0], max=sorted[sorted.length-1];
+ k=Math.max(2,Math.min(30,Math.round(Number(k)||5))); if(min===max)return [{lo:min,hi:max+1,f:a.length,label:`${min}–${max}`}];
+ const width=(max-min)/k, groups=[];
+ for(let i=0;i<k;i++){const lo=min+i*width, hi=i===k-1?max:lo+width; const f=a.filter(x=>i===k-1?x>=lo&&x<=hi:x>=lo&&x<hi).length; groups.push({lo,hi,f,label:`${Number(lo.toFixed(5))}–${Number(hi.toFixed(5))}`});}
+ return groups;
 }
-
-function parseClassIntervals(raw,a){
- const parts=String(raw||'').split(',').map(s=>s.trim()).filter(Boolean), out=[];
- for(const part of parts){const m=part.match(/^\s*(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)(?:\s*:\s*(\d+(?:\.\d+)?))?\s*$/);if(!m)continue;const lo=Number(m[1]),hi=Number(m[2]);if(!(hi>lo))continue;const supplied=m[3]!=null?Number(m[3]):null;const f=supplied!=null?supplied:a.filter(v=>v>=lo&&v<(hi===Math.max(...a)?hi+1e-12:hi)).length;out.push({lo,hi,f,label:`${lo}–${hi}`});}
- if(out.length){const last=out[out.length-1];const mx=Math.max(...a);if(last.hi>=mx)last.f=last.f;}return out;
+function descReadGrouped(){
+ const rows=[...document.querySelectorAll('.desc-group-row')], groups=[];
+ rows.forEach(r=>{const lo=descNum(r.querySelector('.g-lo')?.value),hi=descNum(r.querySelector('.g-hi')?.value),f=descNum(r.querySelector('.g-f')?.value);if(Number.isFinite(lo)&&Number.isFinite(hi)&&hi>lo&&Number.isFinite(f)&&f>=0)groups.push({lo,hi,f,label:`${lo}–${hi}`});});
+ return groups;
 }
-function classIntervalTable(raw,a){const cs=parseClassIntervals(raw,a);if(!cs.length)return '';return `<div class="desc-detail"><h4>Class-Interval Frequency Table</h4><table class="bi-table"><thead><tr><th>Class Interval</th><th>Frequency</th><th>Relative Frequency</th><th>Percentage</th></tr></thead><tbody>${cs.map(c=>`<tr><td>${c.label}</td><td>${c.f}</td><td>${(c.f/a.length).toFixed(5)}</td><td>${(c.f*100/a.length).toFixed(2)}%</td></tr>`).join('')}</tbody></table><p class="graph-note">Syntax used: <b>10-20, 20-30, 30-40</b> or with frequencies <b>10-20:5, 20-30:8, 30-40:12</b>.</p></div>`;}
+function descGroupedStats(groups){
+ const N=groups.reduce((s,g)=>s+g.f,0); if(N<=0)return null;
+ const mids=groups.map(g=>(g.lo+g.hi)/2), sumfx=groups.reduce((s,g,i)=>s+g.f*mids[i],0), m=sumfx/N;
+ const raw=k=>groups.reduce((s,g,i)=>s+g.f*Math.pow(mids[i],k),0)/N;
+ const central=k=>groups.reduce((s,g,i)=>s+g.f*Math.pow(mids[i]-m,k),0)/N;
+ const mu2=central(2),mu3=central(3),mu4=central(4), variance=N>1?groups.reduce((s,g,i)=>s+g.f*Math.pow(mids[i]-m,2),0)/(N-1):NaN;
+ const findQuant=q=>{let target=q*N,cum=0;for(let i=0;i<groups.length;i++){const g=groups[i],next=cum+g.f;if(target<=next&&g.f>0){const h=g.hi-g.lo;return g.lo+((target-cum)/g.f)*h;}cum=next;}return groups[groups.length-1].hi;};
+ const median=findQuant(.5),q1=findQuant(.25),q3=findQuant(.75), iqr=q3-q1;
+ let mi=0;groups.forEach((g,i)=>{if(g.f>groups[mi].f)mi=i}); const modal=groups[mi],fm=modal.f,fp=groups[mi-1]?.f||0,fn=groups[mi+1]?.f||0,den=2*fm-fp-fn, mode=den?modal.lo+((fm-fp)/den)*(modal.hi-modal.lo):((modal.lo+modal.hi)/2);
+ const S=Math.sqrt(Math.max(0,variance)),se=S/Math.sqrt(N),cv=m!==0?S/Math.abs(m)*100:NaN,skew=mu2>0?mu3/Math.pow(mu2,1.5):NaN,kurt=mu2>0?mu4/(mu2*mu2):NaN;
+ return {N,m,sumfx,min:groups[0].lo,max:groups.at(-1).hi,range:groups.at(-1).hi-groups[0].lo,median,q1,q3,iqr,variance,S,se,cv,raw,central,mu2,mu3,mu4,skew,kurt,excess:kurt-3,mode,groups};
+}
+function descGraphs(a,groups,grouped=false){
+ const W=720,H=360,p=52; const edges=groups.map(g=>g.lo).concat(groups.at(-1).hi), counts=groups.map(g=>g.f), labels=groups.map(g=>g.label), mids=groups.map(g=>(g.lo+g.hi)/2), maxF=Math.max(...counts,1), min=groups[0].lo,max=groups.at(-1).hi;
+ const sx=x=>p+(x-min)/(max===min?1:max-min)*(W-2*p), sy=f=>H-p-f/maxF*(H-2*p), axis=`<line x1="${p}" y1="${H-p}" x2="${W-p}" y2="${H-p}" class="bi-axis"/><line x1="${p}" y1="${p}" x2="${p}" y2="${H-p}" class="bi-axis"/>`, title=t=>`<h4>${t}</h4>`;
+ let hist=axis;groups.forEach((g,i)=>{const x=sx(g.lo),w=Math.max(1,sx(g.hi)-x-1);hist+=`<rect x="${x}" y="${sy(g.f)}" width="${w}" height="${H-p-sy(g.f)}" class="bi-bar"><title>${descEsc(g.label)}: ${g.f}</title></rect>`});
+ let poly=axis+`<polyline points="${mids.map((x,i)=>`${sx(x)},${sy(counts[i])}`).join(' ')}" fill="none" class="bi-regline"/>`;mids.forEach((x,i)=>poly+=`<circle cx="${sx(x)}" cy="${sy(counts[i])}" r="4" class="bi-point"/>`);
+ let cum=0,ogPts=`${sx(min)},${sy(0)}`;groups.forEach(g=>{cum+=g.f;ogPts+=` ${sx(g.hi)},${sy(cum)}`});let og=axis+`<polyline points="${ogPts}" fill="none" class="bi-regline"/>`;cum=0;groups.forEach(g=>{cum+=g.f;og+=`<circle cx="${sx(g.hi)}" cy="${sy(cum)}" r="4" class="bi-point"/>`});
+ let bar=axis;const bw=(W-2*p)/Math.max(labels.length,1);groups.forEach((g,i)=>{const h=g.f/maxF*(H-2*p),x=p+i*bw+3;bar+=`<rect x="${x}" y="${H-p-h}" width="${Math.max(2,bw-6)}" height="${h}" class="bi-bar"><title>${descEsc(g.label)}: ${g.f}</title></rect><text x="${x+bw/2}" y="${H-p+18}" text-anchor="middle" class="bi-label">${descEsc(String(g.label).slice(0,12))}</text>`});
+ let pie=`<svg viewBox="0 0 420 320" role="img"><circle cx="210" cy="155" r="95" fill="none" class="bi-axis"/>`,total=counts.reduce((s,x)=>s+x,0),angle=-Math.PI/2,cx=210,cy=155,r=95;counts.forEach((f,i)=>{const a2=angle+2*Math.PI*f/total,x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2),large=a2-angle>Math.PI?1:0;pie+=`<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="none" stroke="currentColor" stroke-width="${Math.max(8,Math.min(45,180*f/total))}" opacity="0.55"><title>${descEsc(labels[i])}: ${(100*f/total).toFixed(2)}%</title></path>`;angle=a2});pie+=`<text x="210" y="300" text-anchor="middle" class="bi-label">Pie chart of frequencies</text></svg>`;
+ let extra='';
+ if(grouped){extra=`<div class="desc-graph"><h4>Boxplot</h4><div class="graph-note">A standard boxplot cannot be calculated exactly from grouped data because the individual observations are not available.</div></div><div class="desc-graph"><h4>Stem-and-Leaf Plot</h4><div class="graph-note">A stem-and-leaf plot cannot be reconstructed exactly from grouped data.</div></div>`;
+ } else {
+  const sorted=[...a].sort((x,y)=>x-y),q=(arr,pr)=>{const pos=(arr.length-1)*pr,lo=Math.floor(pos),hi=Math.ceil(pos);return lo===hi?arr[lo]:arr[lo]+(arr[hi]-arr[lo])*(pos-lo)},q1=q(sorted,.25),med=q(sorted,.5),q3=q(sorted,.75),iqr=q3-q1,lo=sorted.find(x=>x>=q1-1.5*iqr)??sorted[0],hi=[...sorted].reverse().find(x=>x<=q3+1.5*iqr)??sorted.at(-1),bxMin=sorted[0],bxMax=sorted.at(-1)===bxMin?bxMin+1:sorted.at(-1),bsx=x=>p+(x-bxMin)/(bxMax-bxMin)*(W-2*p),cy=H/2;
+  let box=axis+`<line x1="${bsx(lo)}" y1="${cy}" x2="${bsx(q1)}" y2="${cy}" class="bi-axis"/><line x1="${bsx(q3)}" y1="${cy}" x2="${bsx(hi)}" y2="${cy}" class="bi-axis"/><line x1="${bsx(lo)}" y1="${cy-22}" x2="${bsx(lo)}" y2="${cy+22}" class="bi-axis"/><line x1="${bsx(hi)}" y1="${cy-22}" x2="${bsx(hi)}" y2="${cy+22}" class="bi-axis"/><rect x="${bsx(q1)}" y="${cy-35}" width="${Math.max(2,bsx(q3)-bsx(q1))}" height="70" fill="none" class="bi-point"/><line x1="${bsx(med)}" y1="${cy-35}" x2="${bsx(med)}" y2="${cy+35}" class="bi-regline"/>`;
+  const leaves=new Map();sorted.forEach(x=>{const k=Math.floor(x/10),leaf=x-k*10;if(!leaves.has(k))leaves.set(k,[]);leaves.get(k).push(leaf)});let stem=`<div class="stemleaf"><div><b>Stem</b> | <b>Leaves</b></div>`;[...leaves.keys()].sort((x,y)=>x-y).forEach(k=>stem+=`<div>${k} | ${leaves.get(k).join(' ')}</div>`);stem+=`<small>Key: 4 | 5 = 45</small></div>`;
+  extra=`<div class="desc-graph">${title('Boxplot')}<svg viewBox="0 0 ${W} ${H}">${box}</svg></div><div class="desc-graph">${title('Stem-and-Leaf Plot')}${stem}</div>`;
+ }
+ return `<div class="desc-graphs"><h3>Graphs &amp; Visualizations</h3><div class="desc-graph-grid"><div class="desc-graph">${title('Histogram')}<svg viewBox="0 0 ${W} ${H}">${hist}</svg></div><div class="desc-graph">${title('Frequency Polygon')}<svg viewBox="0 0 ${W} ${H}">${poly}</svg></div><div class="desc-graph">${title('Cumulative Frequency Curve (Ogive)')}<svg viewBox="0 0 ${W} ${H}">${og}</svg></div>${extra}<div class="desc-graph">${title('Bar Chart')}<svg viewBox="0 0 ${W} ${H}">${bar}</svg></div><div class="desc-graph">${title('Pie Chart')}${pie}</div></div><p class="graph-note">${grouped?'Graphs are based on the supplied grouped frequency distribution. Boxplot and stem-and-leaf are not reconstructed because individual observations are unavailable.':'Histogram, frequency polygon and ogive use the class intervals selected above; boxplot and stem-and-leaf use the original raw observations.'}</p></div>`;
+}
+function descGroupRowsHTML(groups=[]){return groups.map(g=>`<div class="desc-group-row" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px"><input class="g-lo" type="number" step="any" value="${g.lo??''}" placeholder="Lower"><input class="g-hi" type="number" step="any" value="${g.hi??''}" placeholder="Upper"><input class="g-f" type="number" min="0" step="any" value="${g.f??''}" placeholder="Frequency"><button type="button" class="btn secondary" onclick="this.parentElement.remove()">Remove</button></div>`).join('');}
+function addDescGroupRow(lo='',hi='',f=''){const box=document.getElementById('groupInputTable');if(!box)return;box.insertAdjacentHTML('beforeend',descGroupRowsHTML([{lo,hi,f}]));}
+function setDescInputType(type){window.DESC_INPUT_TYPE=type;const raw=document.getElementById('descRawPanel'),grp=document.getElementById('descGroupedPanel'),btn=document.getElementById('descCalculateBtn'),cp=document.getElementById('rawClassPanel'),rawBtn=document.getElementById('rawDataBtn'),grpBtn=document.getElementById('groupedDataBtn');if(!raw||!grp)return;raw.style.display=type==='raw'?'block':'none';grp.style.display=type==='grouped'?'block':'none';btn.style.display='inline-block';rawBtn.classList.toggle('active',type==='raw');grpBtn.classList.toggle('active',type==='grouped');if(type==='grouped'&&!document.querySelector('.desc-group-row')){document.getElementById('groupInputTable').innerHTML='';for(let i=0;i<5;i++)addDescGroupRow();}if(type==='raw')document.getElementById('data')?.addEventListener('input',()=>{const a=nums(document.getElementById('data').value.replace(/[\s;\n\t]+/g,','));if(a.length>=2){cp.style.display='block';const k=Math.max(2,Math.min(30,Math.ceil(Math.sqrt(a.length))));document.getElementById('numClasses').value=k;document.getElementById('classRecommendation').textContent=`Recommended: ${k} classes`;}});}
 function calcDesc(){
- const el=document.getElementById("data"); if(!el)return;
- const a=nums(el.value.replace(/[\s;\n\t]+/g,","));
- const out=document.getElementById("descResult");
- if(a.length<2){out.innerHTML='<div class="bi-warn">Please enter at least two numerical observations.</div>';return;}
- const n=a.length, m=mean(a), sorted=[...a].sort((x,y)=>x-y);
- const sum=a.reduce((s,x)=>s+x,0), min=sorted[0], max=sorted[n-1], range=max-min;
- const med=median(a), q1=median(sorted.slice(0,Math.floor(n/2))), q3=median(sorted.slice(Math.ceil(n/2)));
- const variance=a.reduce((s,x)=>s+(x-m)**2,0)/(n-1), S=Math.sqrt(variance), se=S/Math.sqrt(n);
- const raw=k=>a.reduce((s,x)=>s+x**k,0)/n;
- const central=k=>a.reduce((s,x)=>s+(x-m)**k,0)/n;
- const mu2=central(2),mu3=central(3),mu4=central(4);
- const skew=mu2>0?mu3/(mu2**1.5):NaN, kurt=mu2>0?mu4/(mu2**2):NaN, excess=kurt-3;
- const freq=new Map();a.forEach(x=>freq.set(x,(freq.get(x)||0)+1));
- const maxFreq=Math.max(...freq.values()), modes=[...freq.entries()].filter(([v,c])=>c===maxFreq).map(x=>x[0]);
- const mode=(maxFreq===1)?"No mode":modes.join(", ");
- const cv=m!==0?S/Math.abs(m)*100:NaN;
- const box=(label,val)=>`<div class="result-box"><span>${label}</span><strong>${Number.isFinite(val)?val.toFixed(5):"—"}</strong></div>`;
- out.innerHTML=`
- <div class="result-grid">
- ${box("n",n)}${box("Σx",sum)}${box("Mean",m)}<div class="result-box"><span>Mode</span><strong>${mode}</strong></div>
- ${box("Median",med)}${box("Minimum",min)}${box("Maximum",max)}${box("Range",range)}${box("Q1",q1)}${box("Q3",q3)}${box("IQR",q3-q1)}
- ${box("Sample Variance",variance)}${box("Sample SD",S)}${box("Standard Error",se)}${box("CV (%)",cv)}
- </div>
- <div class="desc-detail"><h4>Moments</h4>
- <table class="bi-table"><thead><tr><th>Measure</th><th>Value</th></tr></thead><tbody>
- <tr><td>1st Raw Moment</td><td>${raw(1).toFixed(5)}</td></tr><tr><td>2nd Raw Moment</td><td>${raw(2).toFixed(5)}</td></tr><tr><td>3rd Raw Moment</td><td>${raw(3).toFixed(5)}</td></tr><tr><td>4th Raw Moment</td><td>${raw(4).toFixed(5)}</td></tr>
- <tr><td>1st Central Moment</td><td>0.00000</td></tr><tr><td>2nd Central Moment</td><td>${mu2.toFixed(5)}</td></tr><tr><td>3rd Central Moment</td><td>${mu3.toFixed(5)}</td></tr><tr><td>4th Central Moment</td><td>${mu4.toFixed(5)}</td></tr>
- <tr><td>Skewness</td><td>${skew.toFixed(5)}</td></tr><tr><td>Kurtosis</td><td>${kurt.toFixed(5)}</td></tr><tr><td>Excess Kurtosis</td><td>${excess.toFixed(5)}</td></tr>
- </tbody></table>
- <details class="bi-formula"><summary>Show formulas / laws</summary><div class="bi-formula-body">
- <div class="formula-box">\\(\\bar{x}=\\frac{\\sum x}{n}\\)</div><div class="formula-box">\\(s^2=\\frac{\\sum(x-\\bar{x})^2}{n-1}\\)</div><div class="formula-box">\\(s=\\sqrt{s^2}\\)</div><div class="formula-box">\\(SE(\\bar{x})=\\frac{s}{\\sqrt n}\\)</div>
- <div class="formula-box">\\(\\mu'_r=\\frac{1}{n}\\sum x^r\\)</div><div class="formula-box">\\(\\mu_r=\\frac{1}{n}\\sum(x-\\bar{x})^r\\)</div><div class="formula-box">\\(\\text{Skewness}=\\frac{\\mu_3}{\\mu_2^{3/2}}\\)</div><div class="formula-box">\\(\\text{Kurtosis}=\\frac{\\mu_4}{\\mu_2^2}\\)</div>
- </div></details></div>${classIntervalTable(document.getElementById("classIntervals")?.value,a)}${descGraphs(a)}`;
+ const out=document.getElementById('descResult');if(!out)return;const type=window.DESC_INPUT_TYPE;if(!type){out.innerHTML='<div class="bi-warn">Please choose Raw Data or Grouped Data first.</div>';return;}
+ let a=[],groups=[],st;
+ if(type==='raw'){
+  const el=document.getElementById('data');a=nums((el?.value||'').replace(/[\s;\n\t]+/g,','));if(a.length<2){out.innerHTML='<div class="bi-warn">Please enter at least two numerical observations.</div>';return;}const k=Number(document.getElementById('numClasses')?.value)||Math.max(2,Math.ceil(Math.sqrt(a.length)));groups=descGroupsFromRaw(a,k);
+  const n=a.length,m=mean(a),sorted=[...a].sort((x,y)=>x-y),sum=a.reduce((s,x)=>s+x,0),min=sorted[0],max=sorted.at(-1),range=max-min,med=median(a),q1=median(sorted.slice(0,Math.floor(n/2))),q3=median(sorted.slice(Math.ceil(n/2))),variance=a.reduce((s,x)=>s+(x-m)**2,0)/(n-1),S=Math.sqrt(variance),se=S/Math.sqrt(n),raw=k=>a.reduce((s,x)=>s+x**k,0)/n,central=k=>a.reduce((s,x)=>s+(x-m)**k,0)/n,mu2=central(2),mu3=central(3),mu4=central(4),skew=mu2>0?mu3/Math.pow(mu2,1.5):NaN,kurt=mu2>0?mu4/(mu2**2):NaN,excess=kurt-3,freq=new Map();a.forEach(x=>freq.set(x,(freq.get(x)||0)+1));const mf=Math.max(...freq.values()),modes=[...freq.entries()].filter(([v,c])=>c===mf).map(x=>x[0]),mode=mf===1?'No mode':modes.join(', '),cv=m!==0?S/Math.abs(m)*100:NaN;st={N:n,m,sumfx:sum,min,max,range,median:med,q1,q3,iqr:q3-q1,variance,S,se,cv,raw,central,mu2,mu3,mu4,skew,kurt,excess,mode};
+ }else{groups=descReadGrouped();if(groups.length<2){out.innerHTML='<div class="bi-warn">Please enter at least two valid class intervals with frequencies.</div>';return;}groups.sort((x,y)=>x.lo-y.lo);st=descGroupedStats(groups);if(!st){out.innerHTML='<div class="bi-warn">Total frequency must be greater than zero.</div>';return;}a=[];}
+ const box=(label,val)=>`<div class="result-box"><span>${label}</span><strong>${typeof val==='string'?descEsc(val):(Number.isFinite(val)?val.toFixed(5):'—')}</strong></div>`;
+ const rawRows=st.raw;const centralRows=[0,st.mu2,st.mu3,st.mu4];
+ let formulas=type==='raw'?`<div class="formula-box">\\(\\bar{x}=\\frac{\\sum x}{n}\\)</div><div class="formula-box">\\(s^2=\\frac{\\sum(x-\\bar{x})^2}{n-1}\\)</div><div class="formula-box">\\(s=\\sqrt{s^2}\\)</div><div class="formula-box">\\(SE(\\bar{x})=\\frac{s}{\\sqrt n}\\)</div><div class="formula-box">\\(\\mu'_r=\\frac{1}{n}\\sum x^r\\)</div><div class="formula-box">\\(\\mu_r=\\frac{1}{n}\\sum(x-\\bar{x})^r\\)</div>`:`<div class="formula-box">\\(\\bar{x}=\\frac{\\sum f x}{\\sum f}\\), where \\(x\\) is the class midpoint.</div><div class="formula-box">\\(Median=L+\\frac{N/2-cf}{f}h\\)</div><div class="formula-box">\\(Q_1=L+\\frac{N/4-cf}{f}h,\\quad Q_3=L+\\frac{3N/4-cf}{f}h\\)</div><div class="formula-box">\\(Mode=L+\\frac{f_1-f_0}{2f_1-f_0-f_2}h\\)</div><div class="formula-box">\\(s^2=\\frac{\\sum f(x-\\bar{x})^2}{N-1}\\)</div><div class="formula-box">\\(\\mu'_r=\\frac{\\sum f x^r}{N}\\)</div><div class="formula-box">\\(\\mu_r=\\frac{\\sum f(x-\\bar{x})^r}{N}\\)</div>`;
+ out.innerHTML=`<div class="desc-source-note"><b>${type==='raw'?'Raw Data':'Grouped Data'}</b> selected. ${type==='raw'?`${st.N} observations were entered; ${groups.length} class intervals were created for grouped graphs.`:'All measures are calculated from the supplied grouped frequency distribution using class midpoints and grouped-data formulas.'}</div><div class="result-grid">${box('n / N',st.N)}${box('Σx / Σfx',st.sumfx)}${box('Mean',st.m)}${box('Mode',st.mode)}${box('Median',st.median)}${box('Minimum / Lower limit',st.min)}${box('Maximum / Upper limit',st.max)}${box('Range',st.range)}${box('Q1',st.q1)}${box('Q3',st.q3)}${box('IQR',st.iqr)}${box('Sample Variance',st.variance)}${box('Sample SD',st.S)}${box('Standard Error',st.se)}${box('CV (%)',st.cv)}</div><div class="desc-detail"><h4>Moments</h4><table class="bi-table"><thead><tr><th>Measure</th><th>Value</th></tr></thead><tbody><tr><td>1st Raw Moment</td><td>${rawRows[1]?.toFixed(5)}</td></tr><tr><td>2nd Raw Moment</td><td>${rawRows[2]?.toFixed(5)}</td></tr><tr><td>3rd Raw Moment</td><td>${rawRows[3]?.toFixed(5)}</td></tr><tr><td>4th Raw Moment</td><td>${rawRows[4]?.toFixed(5)}</td></tr><tr><td>1st Central Moment</td><td>0.00000</td></tr><tr><td>2nd Central Moment</td><td>${centralRows[1].toFixed(5)}</td></tr><tr><td>3rd Central Moment</td><td>${centralRows[2].toFixed(5)}</td></tr><tr><td>4th Central Moment</td><td>${centralRows[3].toFixed(5)}</td></tr><tr><td>Skewness</td><td>${st.skew.toFixed(5)}</td></tr><tr><td>Kurtosis</td><td>${st.kurt.toFixed(5)}</td></tr><tr><td>Excess Kurtosis</td><td>${st.excess.toFixed(5)}</td></tr></tbody></table><details class="bi-formula"><summary>Show formulas / laws</summary><div class="bi-formula-body">${formulas}<div class="formula-box">\\(Skewness=\\frac{\\mu_3}{\\mu_2^{3/2}},\\quad Kurtosis=\\frac{\\mu_4}{\\mu_2^2}\\)</div></div></details></div><div class="desc-detail"><h4>Grouped Frequency Table</h4><table class="bi-table"><thead><tr><th>Class Interval</th><th>Midpoint</th><th>Frequency</th><th>Cumulative Frequency</th><th>Relative Frequency</th></tr></thead><tbody>${(()=>{let c=0;return groups.map(g=>{c+=g.f;return `<tr><td>${descEsc(g.label)}</td><td>${((g.lo+g.hi)/2).toFixed(5)}</td><td>${g.f}</td><td>${c}</td><td>${(g.f/st.N).toFixed(5)}</td></tr>`}).join('')})()}</tbody></table></div>${descGraphs(a,groups,type==='grouped')}`;
  if(window.MathJax?.typesetPromise)window.MathJax.typesetPromise([out]).catch(()=>{});
 }
+function initDesc(){const table=document.getElementById('groupInputTable');if(table&&!table.children.length){for(let i=0;i<5;i++)addDescGroupRow();}setDescInputType('raw');const raw=document.getElementById('data');if(raw){raw.addEventListener('input',()=>{const a=nums(raw.value.replace(/[\s;\n\t]+/g,','));const cp=document.getElementById('rawClassPanel'),rec=document.getElementById('classRecommendation');if(a.length>=2){const k=Math.max(2,Math.min(30,Math.ceil(Math.sqrt(a.length))));cp.style.display='block';document.getElementById('numClasses').value=k;rec.textContent=`Recommended: ${k} classes`;}else cp.style.display='none';});}}
+if(document.getElementById('descResult'))initDesc();
 
 function logGamma(z){const g=7,C=[0.9999999999998099,676.5203681218851,-1259.1392167224028,771.3234287776531,-176.6150291621406,12.507343278686905,-0.13857109526572012,9.984369578019572e-6,1.5056327351493116e-7];if(z<.5)return Math.log(Math.PI)-Math.log(Math.sin(Math.PI*z))-logGamma(1-z);z-=1;let x=C[0];for(let i=1;i<C.length;i++)x+=C[i]/(z+i);let t=z+g+.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x)}
 function gamma(z){return Math.exp(logGamma(z))} function logChoose(n,k){if(k<0||k>n)return -Infinity;return logGamma(n+1)-logGamma(k+1)-logGamma(n-k+1)}
