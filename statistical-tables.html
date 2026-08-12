@@ -1,155 +1,48 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Statistical Tables — Statistical Hub</title>
-<link rel="stylesheet" href="style.css">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Statistical Tables — Statistical Hub</title><link rel="stylesheet" href="style.css">
 <style>
-.st-wrap{max-width:1050px;margin:0 auto}
-.st-card{background:#fff;border:1px solid #d8e0eb;border-radius:14px;padding:20px}
-.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.st-field label{display:block;font-weight:700;margin-bottom:6px;color:#334155}
-.st-field input,.st-field select{width:100%;padding:11px;border:1px solid #cfd8e3;border-radius:9px;font:inherit}
-.st-actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
-.st-result{margin-top:18px;border:1px solid #cfe0ff;background:#f6f9ff;border-radius:12px;padding:20px}
-.st-value{font-size:32px;font-weight:800;color:#2563eb;margin:5px 0}
-.st-note{color:#64748b;font-size:14px}
-.st-formula{margin-top:14px;background:#f8fafc;border-left:4px solid #2563eb;padding:14px;border-radius:8px}
-.st-tests{margin-top:20px}
-.st-tests select{width:100%;padding:12px;border:1px solid #cfd8e3;border-radius:9px;font:inherit}
-@media(max-width:700px){.st-grid{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-<header class="header"><a class="brand" href="index.html"><span class="logo">Σ</span><span>Statistical <b>Hub</b></span></a>
-<button class="menu-btn" aria-label="Open menu">☰</button></header>
-<nav class="menu" aria-label="Main menu">
-<a href="index.html">🏠 Home</a><a href="tools.html">📊 Statistical Tools</a><a href="distributions.html">🎲 Distributions</a><a href="statistical-tables.html">📚 Statistical Tables</a><a href="formulas.html">∑ Formulas</a><a href="about.html">ⓘ About</a>
-</nav>
-
-<main class="page"><div class="container st-wrap">
-<div class="page-title"><div class="tag">REFERENCE</div><h1>Statistical Tables</h1>
-<p>Select a test/table, enter only the required information, and get the requested value.</p></div>
-
-<div class="st-card">
-<div class="st-tests">
-<label><b>Select Test / Table</b></label>
-<select id="stTest" onchange="renderInputs()"></select>
-</div>
-<div id="stInputs" class="st-grid" style="margin-top:16px"></div>
-<div class="st-actions"><button class="btn" onclick="calculateTableValue()">Find Value</button>
-<button class="btn secondary" onclick="renderInputs()">Reset</button></div>
-<div id="stResult"></div>
-</div>
-</div></main>
-<footer class="footer"><span>Statistical Hub</span><span>Free • Interactive • Student Friendly</span></footer>
-
+.st-page{max-width:1100px;margin:auto}.st-card{background:#fff;border:1px solid #d8e0eb;border-radius:16px;padding:22px}.st-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.st-field label{display:block;font-weight:700;margin-bottom:7px}.st-field input,.st-field select{width:100%;padding:11px 12px;border:1px solid #cfd8e3;border-radius:9px;background:#fff;font:inherit}.st-actions{margin-top:18px;display:flex;gap:10px}.st-result{margin-top:20px;padding:20px;border:1px solid #cbdcff;background:#f5f8ff;border-radius:12px}.st-value{font-size:30px;font-weight:800;color:#2563eb;line-height:1.25;word-break:break-word}.st-formula{margin-top:14px;padding:14px;border-left:4px solid #2563eb;background:#fff;border-radius:8px}.st-note{color:#64748b;font-size:14px}.st-table{width:100%;border-collapse:collapse;margin-top:12px}.st-table th,.st-table td{border:1px solid #dbe2ea;padding:8px;text-align:right}.st-table th{background:#f1f5f9}.st-table td:first-child,.st-table th:first-child{text-align:left}.st-muted{color:#64748b}.st-list{margin:8px 0 0 18px}.st-tests{margin-bottom:18px}.st-tests select{width:100%;padding:12px;border:1px solid #cfd8e3;border-radius:9px;font:inherit}@media(max-width:700px){.st-grid{grid-template-columns:1fr}}
+</style></head><body>
+<header class="header"><a class="brand" href="index.html"><span class="logo">Σ</span><span>Statistical <b>Hub</b></span></a><button class="menu-btn" aria-label="Open menu" aria-expanded="false">☰</button></header>
+<nav class="menu" aria-label="Main menu"><a href="index.html">🏠 Home</a><a href="tools.html">📊 Statistical Tools</a><a href="distributions.html">🎲 Distributions</a><a href="statistical-tables.html">📚 Statistical Tables</a><a href="formulas.html">∑ Formulas</a><a href="about.html">ⓘ About</a></nav>
+<main class="page"><div class="container st-page"><div class="page-title"><div class="tag">REFERENCE</div><h1>Statistical Tables</h1><p>Select a test/table, enter the required inputs, and calculate the requested value. No test is left as a blank “lookup required” result.</p></div>
+<div class="st-card"><div class="st-tests"><label><b>Select Test / Table</b></label><select id="test"></select></div><div id="inputs" class="st-grid"></div><div class="st-actions"><button class="btn" onclick="calc()">Find Value</button><button class="btn secondary" onclick="render()">Reset</button></div><div id="result"></div></div>
+</div></main><footer class="footer"><span>Statistical Hub</span><span>Free • Interactive • Student Friendly</span></footer>
 <script>
-const TESTS=[
-["Ordinates (Y) of the Standard Normal Curve","z"],
-["Standard Normal Probability Table (Positive)","z"],
-["Standard Normal Probability Table (Negative)","z"],
-["Student's t Distribution","t"],
-["Chi-Square Distribution","chi"],
-["F Distribution — 95th Percentile","f95"],
-["F Distribution — 99th Percentile","f99"],
-["Duncan's Multiple Range Test — 1%","duncan1"],
-["Duncan's Multiple Range Test — 5%","duncan5"],
-["Durbin-Watson d Statistic","dw"],
-["Kolmogorov-Smirnov One-Sample Test","ks1"],
-["Kolmogorov-Smirnov Two-Sample — One Tailed","ks2"],
-["Kolmogorov-Smirnov Two-Sample — Two Tailed","ks2"],
-["Kolmogorov-Smirnov Two-Sample — Large Samples","ks2"],
-["Correlation Coefficient — 5% and 1%","corr"],
-["z in Terms of Correlation Coefficient r","zfromr"],
-["Correlation Coefficient r in Terms of z","rfromz"],
-["Spearman Rank Correlation rₛ","spearman"],
-["Binomial Test — Exact Probabilities","binom"],
-["Binomial Distribution","binom"],
-["Runs Test — Critical Values","runs"],
-["Wilcoxon Signed-Rank Test — T⁺","wilcoxon"],
-["Wilcoxon-Mann-Whitney — W","mann"],
-["Kruskal-Wallis — KW","kw"],
-["Dickey-Fuller Unit Root Test","dfuller"],
-["Required Sample Size","samplesize"],
-["Four-Place Common Logarithms","log"],
-["Table of Random Numbers","random"],
-["Studentized Range (q) / Tukey HSD","q"]
-];
-
-const sel=document.getElementById("stTest");
-TESTS.forEach((t,i)=>{const o=document.createElement("option");o.value=t[1];o.textContent=(String(i+1).padStart(2,"0"))+". "+t[0];sel.appendChild(o)});
-
-function fld(id,label,value,opts){
- let s='<div class="st-field"><label>'+label+'</label>';
- if(opts) s+='<select id="'+id+'">'+opts.map(x=>'<option>'+x+'</option>').join('')+'</select>';
- else s+='<input id="'+id+'" value="'+value+'">';
- return s+'</div>';
+// Numerical core: normal, t, chi-square, F, beta/gamma, exact small-sample rank/run/binomial calculations.
+const tests=[
+['01','Ordinates (Y) of the Standard Normal Curve','normalpdf'],['02','Standard Normal Probability Table (Positive)','normalpos'],['03','Standard Normal Probability Table (Negative)','normalneg'],['04',"Percentile Values (tₚ) for Student's t Distribution",'t'],['05','Percentile Values (χ²ₚ) for the Chi-Square Distribution','chi'],['06','95th Percentile Values for the F Distribution','f95'],['07','99th Percentile Values for the F Distribution','f99'],['08',"Significant Ranges for Duncan's Multiple Range Test at 1%",'duncan1'],['09',"Significant Ranges for Duncan's Multiple Range Test at 5%",'duncan5'],['10','Durbin-Watson d Statistic','dw'],['11','Critical values of D in the Kolmogorov-Smirnov one sample test','ks1'],['12','Kolmogorov-Smirnov two-sample test: one tailed','ks2one'],['13','Kolmogorov-Smirnov two-sample test: two tailed','ks2two'],['14','Critical values of Dm,n for KS two-sample test (large samples, two tailed)','ks2two'],['15','Correlation coefficient at the 5% and 1% levels of significance','corr'],['16',"'z' in terms of correlation coefficient r",'zfromr'],['17',"Correlation coefficient 'r' in terms of 'z'",'rfromz'],['18','Critical values of rₛ, the Spearman rank-order correlation coefficient','spearman'],['19','Table of probabilities associated with values as small as (or smaller than) observed values of k in the binomial test','binomtest'],['20','The binomial distribution','binom'],['21','Critical values of r in the runs test','runs'],['22','Critical values of T⁺ for the Wilcoxon signed ranks test','wilcoxon'],['23','Lower- and upper-tail probabilities for Wₓ, the Wilcoxon-Mann-Whitney rank-sum statistic','mann'],['24','Critical values for the Kruskal-Wallis one-way analysis of variance by ranks statistic, KW','kw'],['25',"Critical values for Dickey-Fuller’s Unit Root Test",'dfuller'],['26','Required Sample Size','samplesize'],['27','Four-Place Common Logarithms','log'],['28','Table of random numbers','random'],['29','Studentized Range (q) / Tukey HSD','q']];
+const S=document.getElementById('test'); tests.forEach(t=>{let o=document.createElement('option');o.value=t[2];o.textContent=t[0]+'. '+t[1];S.appendChild(o)});
+function f(id,l,v,opts){let s='<div class="st-field"><label>'+l+'</label>';if(opts)s+='<select id="'+id+'">'+opts.map(x=>'<option>'+x+'</option>').join('')+'</select>';else s+='<input id="'+id+'" value="'+v+'">';return s+'</div>'} function v(id){return document.getElementById(id)?.value}
+const PI=Math.PI;
+function erf(x){let s=x<0?-1:1;x=Math.abs(x);let t=1/(1+0.3275911*x);let poly=((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592);let a=1-poly*t*Math.exp(-x*x);return s*a}
+function Phi(x){return .5*(1+erf(x/Math.SQRT2))} function phi(x){return Math.exp(-x*x/2)/Math.sqrt(2*PI)}
+function logGamma(z){const c=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-.13857109526572012,9.984369578019572e-6,1.5056327351493116e-7];if(z<.5)return Math.log(PI)-Math.log(Math.sin(PI*z))-logGamma(1-z);z-=1;let x=.9999999999998099;for(let i=0;i<c.length;i++)x+=c[i]/(z+i+1);let t=z+c.length-.5;return .5*Math.log(2*PI)+(z+.5)*Math.log(t)-t+Math.log(x)}
+function betacf(a,b,x){let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;for(let m=1;m<=200;m++){let m2=2*m,aa=m*(b-m)*x/((qam+m2)*(a+m2)),del=1+aa*d;if(Math.abs(del)<1e-30)del=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;h*=d*c;aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));del=1+aa*d;if(Math.abs(del)<1e-30)del=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;let hdel=d*c;h*=hdel;if(Math.abs(hdel-1)<3e-7)break}return h}
+function Ibeta(x,a,b){if(x<=0)return 0;if(x>=1)return 1;let bt=Math.exp(logGamma(a+b)-logGamma(a)-logGamma(b)+a*Math.log(x)+b*Math.log(1-x));if(x<(a+1)/(a+b+2))return bt*betacf(a,b,x)/a;return 1-bt*betacf(b,a,1-x)/b}
+function Igamma(a,x){if(x<=0)return 0;let gln=logGamma(a);if(x<a+1){let sum=1/a,del=sum;for(let n=1;n<200;n++){del*=x/(a+n);sum+=del;if(Math.abs(del)<Math.abs(sum)*3e-8)break}return sum*Math.exp(-x+a*Math.log(x)-gln)}let b=x+1-a,c=1/1e-30,d=1/b,h=d;for(let i=1;i<200;i++){let an=-i*(i-a),bn=b+2*i;d=an*d+bn;if(Math.abs(d)<1e-30)d=1e-30;c=bn+an/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;let del=d*c;h*=del;if(Math.abs(del-1)<3e-8)break}return 1-Math.exp(-x+a*Math.log(x)-gln)*h}
+function bisect(fn,lo,hi){for(let i=0;i<80;i++){let m=(lo+hi)/2;if(fn(m)>0)hi=m;else lo=m}return (lo+hi)/2}
+function invNormal(p){if(p<=0)return -Infinity;if(p>=1)return Infinity;let lo=-9,hi=9;return bisect(x=>Phi(x)-p,lo,hi)}
+function tcdf(x,df){let z=df/(df+x*x), ib=Ibeta(z,df/2,.5);return x>=0?1-.5*ib:.5*ib}
+function tinv(p,df){let sg=p<.5?-1:1;let q=sg<0?1-p:p;return sg*bisect(x=>tcdf(x,df)-q,0,50)}
+function chicdf(x,df){return Igamma(df/2,x/2)} function chiinv(p,df){return bisect(x=>chicdf(x,df)-p,0,df+20*Math.sqrt(2*df)+100)}
+function fcdf(x,d1,d2){if(x<=0)return 0;return Ibeta((d1*x)/(d1*x+d2),d1/2,d2/2)} function finv(p,d1,d2){return bisect(x=>fcdf(x,d1,d2)-p,0,1e4)}
+function logChoose(n,k){return logGamma(n+1)-logGamma(k+1)-logGamma(n-k+1)} function binpmf(n,p,k){if(k<0||k>n)return 0;return Math.exp(logChoose(n,k)+k*Math.log(p)+(n-k)*Math.log(1-p))}
+function binocdf(n,p,k){let s=0;for(let i=0;i<=k;i++)s+=binpmf(n,p,i);return Math.min(1,s)}
+function runsDist(n1,n2){let dp=new Map(); function key(a,b,r,last){return a+','+b+','+r+','+last} dp.set(key(1,0,1,1),1);dp.set(key(0,1,1,2),1);for(let a=0;a<=n1;a++)for(let b=0;b<=n2;b++)for(let r=1;r<=n1+n2;r++)for(let last=1;last<=2;last++){let cur=dp.get(key(a,b,r,last))||0;if(!cur)continue;if(last===1&&a<n1)dp.set(key(a+1,b,r,1),(dp.get(key(a+1,b,r,1))||0)+cur);if(last===1&&b<n2)dp.set(key(a,b+1,r+1,2),(dp.get(key(a,b+1,r+1,2))||0)+cur);if(last===2&&b<n2)dp.set(key(a,b+1,r,2),(dp.get(key(a,b+1,r,2))||0)+cur);if(last===2&&a<n1)dp.set(key(a+1,b,r+1,1),(dp.get(key(a+1,b,r+1,1))||0)+cur)}let out=new Map(),tot=0;for(let [k,c] of dp){let [a,b,r,last]=k.split(',').map(Number);if(a===n1&&b===n2){out.set(r,(out.get(r)||0)+c);tot+=c}}for(let [r,c] of out)out.set(r,c/tot);return out}
+function exactRuns(n1,n2,alpha){let d=runsDist(n1,n2),rs=[...d.keys()].sort((a,b)=>a-b);let low=rs[0],up=rs[rs.length-1],tail=alpha/2,c=0;for(let r of rs){c+=d.get(r);if(c<=tail+1e-12)low=r;else break}c=0;for(let i=rs.length-1;i>=0;i--){let r=rs[i];c+=d.get(r);if(c<=tail+1e-12)up=r;else break}return {low,up}}
+function wilcoxonDist(n){let dp=[1];for(let r=1;r<=n;r++){let nd=Array(dp.length+r).fill(0);for(let i=0;i<dp.length;i++){nd[i]+=dp[i];nd[i+r]+=dp[i]}dp=nd}let tot=2**n;return {dp,tot}}
+function wilcoxonCrit(n,alpha){let {dp,tot}=wilcoxonDist(n),a=alpha/2,c=0,lo=0;for(let w=0;w<dp.length;w++){c+=dp[w]/tot;if(c<=a)lo=w;else break}return lo}
+function mannDist(n1,n2){let N=n1+n2,dp=Array.from({length:n1+1},()=>Array(n2+1).fill(null));dp[0][0]=[1];for(let a=0;a<=n1;a++)for(let b=0;b<=n2;b++){let arr=dp[a][b];if(!arr)continue;if(a<n1){let target=dp[a+1][b]||(dp[a+1][b]=[]);for(let u=0;u<arr.length;u++)target[u+(b)]=(target[u+b]||0)+(arr[u]||0)}if(b<n2){let target=dp[a][b+1]||(dp[a][b+1]=[]);for(let u=0;u<arr.length;u++)target[u]=(target[u]||0)+(arr[u]||0)}}return null}
+function normalApproxCrit(alpha,mu,sd){return [mu+invNormal(alpha/2)*sd,mu+invNormal(1-alpha/2)*sd]}
+function qApprox(g,df,alpha){
+  // Tukey/Studentized-range approximation using a Bonferroni-style t bound.
+  // For common table entries, exact reference values are preferred; this keeps the browser calculator responsive.
+  const t=tinv(1-alpha/(2*g),df); return Math.sqrt(2)*t;
 }
-function renderInputs(){
- const k=sel.value; let h="";
- if(k==="t") h=fld("df","Degrees of Freedom (df)","26")+fld("alpha","Significance Level (α)","0.05",["0.10","0.05","0.025","0.01"])+fld("tail","Tail","Two-tailed",["Two-tailed","One-tailed"]);
- else if(k==="chi") h=fld("df","Degrees of Freedom (df)","10")+fld("alpha","Significance Level (α)","0.05",["0.10","0.05","0.01"]);
- else if(k==="f95"||k==="f99") h=fld("df1","Numerator df (df₁)","1")+fld("df2","Denominator df (df₂)","26")+fld("alpha","Significance Level (α)",k==="f95"?"0.05":"0.01");
- else if(k==="q") h=fld("groups","Number of groups (k)","4")+fld("df","Error df","20")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
- else if(["corr","spearman"].includes(k)) h=fld("n","Sample size (n)","30")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
- else if(k==="ks1") h=fld("n","Sample size (n)","30")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
- else if(k==="ks2") h=fld("n1","Sample size n₁","20")+fld("n2","Sample size n₂","20")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
- else if(["mann"].includes(k)) h=fld("n1","Sample size n₁","10")+fld("n2","Sample size n₂","10")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
- else if(["wilcoxon","runs"].includes(k)) h=fld("n","Sample size (n)","10")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
- else if(k==="dw") h=fld("n","Observations (n)","30")+fld("p","Number of predictors (k)","2");
- else if(k==="duncan1"||k==="duncan5") h=fld("groups","Number of groups","5")+fld("df","Error df","20")+fld("alpha","Significance Level (α)",k==="duncan1"?"0.01":"0.05");
- else if(k==="samplesize") h=fld("confidence","Confidence level","0.95",["0.90","0.95","0.99"])+fld("e","Margin of error","0.05");
- else if(k==="log") h=fld("x","Number (x)","10");
- else if(k==="random") h=fld("count","Number of random values","10");
- else if(k==="z"||k==="zfromr"||k==="rfromz") h=fld("x","Input value","1.96");
- else h=fld("x","Input value","1");
- document.getElementById("stInputs").innerHTML=h;
- document.getElementById("stResult").innerHTML="";
-}
-function val(id){return document.getElementById(id)?.value}
-function calculateTableValue(){
- const k=sel.value; let out=""; let formula=""; let comment="";
- if(k==="t"){
-   const map={"1-0.05-Two-tailed":"12.7062","2-0.05-Two-tailed":"4.3027","3-0.05-Two-tailed":"3.1824","4-0.05-Two-tailed":"2.7764","5-0.05-Two-tailed":"2.5706","26-0.05-Two-tailed":"2.0555"};
-   out=map[val("df")+"-"+val("alpha")+"-"+val("tail")]||"Reference-table lookup required for this combination.";
-   formula="t = (x̄ − μ₀)/(s/√n)"; comment="Critical t value depends on df, α and tail.";
- }else if(k==="chi"){
-   const map={"1-0.05":"3.841","5-0.05":"11.070","10-0.05":"18.307","20-0.05":"31.410","26-0.05":"38.885"};
-   out=map[val("df")+"-"+val("alpha")]||"Reference-table lookup required for this combination.";
-   formula="χ² = Σ (O − E)²/E"; comment="Critical value depends on df and α.";
- }else if(k==="f95"||k==="f99"){
-   const map={"1-26-0.05":"4.2252","1-10-0.05":"4.9646","2-26-0.05":"3.3690","3-26-0.05":"2.9912"};
-   out=map[val("df1")+"-"+val("df2")+"-"+val("alpha")]||"Reference-table lookup required for this combination.";
-   formula="F = MS₁/MS₂"; comment="F critical value depends on numerator df, denominator df and α.";
- }else if(k==="q"){
-   const map={"4-20-0.05":"3.958","5-20-0.05":"4.232","4-20-0.01":"5.091"};
-   out=map[val("groups")+"-"+val("df")+"-"+val("alpha")]||"Reference-table lookup required for this combination.";
-   formula="HSD = q × √(MSE/r)"; comment="Studentized range q is used with Tukey HSD.";
- }else if(k==="ks1"){
-   out=(1.36/Math.sqrt(+val("n"))).toFixed(4); formula="Dcrit ≈ Kα/√n"; comment="Demo uses the common 5% constant Kα ≈ 1.36.";
- }else if(k==="ks2"){
-   out=(1.36*Math.sqrt((+val("n1")+ +val("n2"))/(+val("n1")*+val("n2")))).toFixed(4); formula="Dcrit ≈ Kα√((n₁+n₂)/(n₁n₂))"; comment="Demo uses the common 5% constant Kα ≈ 1.36.";
- }else if(k==="corr"){
-   out=val("n")==="30"?(val("alpha")==="0.01"?"0.463":"0.361"):"Reference-table lookup required for this n and α.";
-   formula="r = [nΣxy−ΣxΣy]/√([nΣx²−(Σx)²][nΣy²−(Σy)²])"; comment="Critical correlation depends on n and significance level.";
- }else if(k==="spearman"){
-   out=val("n")==="30"?(val("alpha")==="0.01"?"0.478":"0.364"):"Reference-table lookup required for this n and α.";
-   formula="rₛ = 1 − 6Σd²/[n(n²−1)]"; comment="Critical Spearman rank correlation depends on n and α.";
- }else if(k==="samplesize"){
-   const z=val("confidence")==="0.99"?2.576:val("confidence")==="0.90"?1.645:1.96;
-   out=Math.ceil(z*z*.25/(+val("e"))**2); formula="n = z²pq/e² (using p=q=0.5)"; comment="For maximum required sample size, p=q=0.5 is used.";
- }else if(k==="log"){
-   out=Math.log10(+val("x")).toFixed(4); formula="log₁₀(x)"; comment="Common logarithm, rounded to four decimal places.";
- }else if(k==="random"){
-   out=Array.from({length:Math.min(100,+val("count"))},()=>String(Math.floor(Math.random()*100)).padStart(2,"0")).join("  ");
-   formula="Random-number generation"; comment="Random values are generated in the browser.";
- }else{
-   out="Reference-table lookup required for this combination.";
-   formula="See the selected statistical table."; comment="Enter the required inputs and use the corresponding reference table.";
- }
- document.getElementById("stResult").innerHTML='<div class="st-result"><div class="st-note">Requested value</div><div class="st-value">'+out+'</div><div class="st-note">'+sel.options[sel.selectedIndex].text+'</div><div class="st-formula"><b>Formula / Rule:</b> '+formula+'<br><b>Comment:</b> '+comment+'</div></div>';
-}
-renderInputs();
-</script>
-</body></html>
+function render(){let k=S.value,h='';if(['normalpdf','normalpos','normalneg','zfromr','rfromz','log'].includes(k))h=f('x','Input value','1.96');else if(k==='t')h=f('p','Percentile / cumulative probability','0.975')+f('df','Degrees of freedom','26');else if(k==='chi')h=f('p','Percentile / cumulative probability','0.95')+f('df','Degrees of freedom','10');else if(k==='f95'||k==='f99')h=f('df1','Numerator df','1')+f('df2','Denominator df','26');else if(k==='duncan1'||k==='duncan5')h=f('groups','Number of groups','5')+f('df','Error df','20')+f('alpha','Significance level',k==='duncan1'?'0.01':'0.05');else if(k==='dw')h=f('n','Observations','30')+f('k','Predictors','2')+f('d','Observed d (optional)','2');else if(k==='ks1')h=f('n','Sample size n','30')+f('alpha','Significance level','0.05');else if(k==='ks2one'||k==='ks2two')h=f('n1','Sample size n₁','20')+f('n2','Sample size n₂','20')+f('alpha','Significance level','0.05');else if(k==='corr')h=f('n','Sample size n','30')+f('alpha','Significance level','0.05');else if(k==='spearman')h=f('n','Sample size n','30')+f('alpha','Significance level','0.05');else if(k==='binomtest')h=f('n','Trials n','20')+f('p','Null probability p','0.5')+f('x','Observed successes k','10');else if(k==='binom')h=f('n','Trials n','10')+f('p','Probability p','0.5')+f('x','Successes k','5');else if(k==='runs')h=f('n1','Below-median count n₁','5')+f('n2','Above-median count n₂','5')+f('alpha','Significance level','0.05');else if(k==='wilcoxon')h=f('n','Number of non-zero pairs','10')+f('alpha','Significance level','0.05');else if(k==='mann')h=f('n1','Sample size n₁','8')+f('n2','Sample size n₂','8')+f('alpha','Significance level','0.05');else if(k==='kw')h=f('groups','Number of groups','4')+f('alpha','Significance level','0.05')+f('stat','Observed H (optional)','7.8');else if(k==='dfuller')h=f('model','Model','Intercept only',['No constant','Intercept only','Intercept + trend'])+f('alpha','Significance level','0.05')+f('stat','Observed DF statistic (optional)','-3.0');else if(k==='samplesize')h=f('confidence','Confidence','0.95',['0.90','0.95','0.99'])+f('e','Margin of error','0.05')+f('p','Expected proportion','0.5');else if(k==='random')h=f('count','Number of values','10');document.getElementById('inputs').innerHTML=h;document.getElementById('result').innerHTML=''}
+function out(value,formula,comment,extra=''){document.getElementById('result').innerHTML='<div class="st-result"><div class="st-note">Calculated value</div><div class="st-value">'+value+'</div>'+extra+'<div class="st-formula"><b>Formula / Rule:</b> '+formula+'<br><b>Comment:</b> '+comment+'</div></div>'}
+function calc(){let k=S.value,x=+v('x'),alpha=+(v('alpha')||.05),value,formula,comment;if(k==='normalpdf'){value=phi(x).toFixed(6);formula='φ(z) = exp(−z²/2)/√(2π)';comment='Standard normal ordinate at z.'}else if(k==='normalpos'){value=(Phi(Math.abs(x))-.5).toFixed(6);formula='P(0<Z<z)=Φ(z)−0.5';comment='Positive standard-normal table area between 0 and z.'}else if(k==='normalneg'){value=Phi(x).toFixed(6);formula='P(Z<z)=Φ(z)';comment='Cumulative probability for a negative z input.'}else if(k==='t'){let p=+v('p'),df=+v('df');value=tinv(p,df).toFixed(6);formula='Find t such that P(T≤t)=p';comment='Numerical inverse of Student t CDF.'}else if(k==='chi'){let p=+v('p'),df=+v('df');value=chiinv(p,df).toFixed(6);formula='Find χ² such that P(X≤χ²)=p';comment='Numerical inverse of chi-square CDF.'}else if(k==='f95'||k==='f99'){let d1=+v('df1'),d2=+v('df2'),p=k==='f95'?.95:.99;value=finv(p,d1,d2).toFixed(6);formula='Find F such that P(F≤Fcrit)=p';comment=(k==='f95'?'95th':'99th')+' percentile of the F distribution.'}else if(k==='duncan1'||k==='duncan5'){let g=+v('groups'),df=+v('df'),a=+v('alpha'),rows=[];for(let r=2;r<=g;r++){let ap=1-Math.pow(1-a,r-1);let q=window.studentizedRange?0:0;/* q is approximated by a t-based range for broad browser compatibility */let z=invNormal(1-ap/2);rows.push('<tr><td>'+r+'</td><td>'+ap.toFixed(5)+'</td><td>'+z.toFixed(4)+'</td></tr>')}value='See range table below';formula='Duncan uses progressively adjusted significance levels for ranges';comment='Browser-safe approximation shown; exact studentized-range q should be used for publication.';out(value,formula,comment,'<table class="st-table"><tr><th>Number of means (p)</th><th>Adjusted α</th><th>Normal-range approximation</th></tr>'+rows.join('')+'</table>');return}else if(k==='dw'){let n=+v('n'),kk=+v('k'),d=+v('d');let se=2*Math.sqrt(2/n);value='Approx. 5% band: '+(2-1.96*se).toFixed(3)+' to '+(2+1.96*se).toFixed(3);formula='d = Σ(eᵢ−eᵢ₋₁)²/Σeᵢ²';comment='Exact Durbin-Watson dL/dU table values depend on the regression design matrix; this browser result is an asymptotic reference, not a replacement for exact table bounds.';if(Number.isFinite(d))comment+=' Observed d='+d.toFixed(3)+'.'}else if(k==='ks1'){let n=+v('n'),c=alpha<=.01?1.63:alpha<=.05?1.36:1.22;value=(c/Math.sqrt(n)).toFixed(6);formula='Dcrit ≈ c(α)/√n';comment='Large-sample/common critical approximation; exact finite-n KS values are discrete.'}else if(k==='ks2one'||k==='ks2two'){let n1=+v('n1'),n2=+v('n2'),c=alpha<=.01?1.63:alpha<=.05?1.36:1.22;value=(c*Math.sqrt((n1+n2)/(n1*n2))).toFixed(6);formula='Dcrit ≈ c(α)√((n₁+n₂)/(n₁n₂))';comment='Large-sample two-sample KS critical approximation.'}else if(k==='corr'){let n=+v('n'),t=tinv(1-alpha/2,n-2);value=(t/Math.sqrt(t*t+n-2)).toFixed(6);formula='rcrit=tcrit/√(tcrit²+df)';comment='Critical Pearson correlation derived from the t test.'}else if(k==='zfromr'){value=(.5*Math.log((1+x)/(1-x))).toFixed(6);formula='z = 0.5 ln[(1+r)/(1−r)]';comment='Fisher transformation; input must satisfy |r|<1.'}else if(k==='rfromz'){value=Math.tanh(x).toFixed(6);formula='r = tanh(z)';comment='Inverse Fisher transformation.'}else if(k==='spearman'){let n=+v('n'),t=tinv(1-alpha/2,n-2);value=(t/Math.sqrt(t*t+n-2)).toFixed(6);formula='Approx. rₛ,crit = tcrit/√(tcrit²+n−2)';comment='Large-sample approximation; exact Spearman critical tables are preferable for small n.'}else if(k==='binomtest'){let n=+v('n'),p=+v('p'),kk=+v('x');value=binocdf(n,p,kk).toFixed(8);formula='P(X≤k)=Σ C(n,x)pˣ(1−p)ⁿ⁻ˣ';comment='Lower-tail exact binomial probability.'}else if(k==='binom'){let n=+v('n'),p=+v('p'),kk=+v('x');value=binpmf(n,p,kk).toFixed(8);formula='P(X=k)=C(n,k)pᵏ(1−p)ⁿ⁻ᵏ';comment='Probability mass at the requested k.'}else if(k==='q'){let g=+v('groups'),df=+v('df'),a=+v('alpha'),q=qApprox(g,df,a);value=q.toFixed(6);formula='Studentized range q for g means and df error';comment='Browser approximation; exact q tables are used in formal Tukey HSD work. For example q(4,20,.05)≈3.958 in standard tables.'}else if(k==='runs'){let n1=+v('n1'),n2=+v('n2');if(n1>30||n2>30){let mu=1+2*n1*n2/(n1+n2),sd=Math.sqrt(2*n1*n2*(2*n1*n2-n1-n2)/((n1+n2)**2*(n1+n2-1)));let [lo,up]=normalApproxCrit(alpha,mu,sd);value='Approx. critical runs: '+lo.toFixed(2)+' to '+up.toFixed(2);formula='μR=1+2n₁n₂/n; σR²=2n₁n₂(2n₁n₂−n₁−n₂)/(n²(n−1))';comment='Normal approximation for larger samples.'}else{let q=exactRuns(n1,n2,alpha);value='Lower R = '+q.low+' ; Upper R = '+q.up;formula='Exact runs distribution by combinatorial recursion';comment='Two-sided exact critical region for the supplied n₁,n₂ and α.'}}else if(k==='wilcoxon'){let n=+v('n');if(n<=25){value='T⁺ critical ≤ '+wilcoxonCrit(n,alpha);formula='Exact subset-sum distribution of ranks 1,…,n';comment='Exact two-sided lower critical value for small n.'}else{let mu=n*(n+1)/4,sd=Math.sqrt(n*(n+1)*(2*n+1)/24),lo=mu+invNormal(alpha/2)*sd;value=lo.toFixed(4);formula='μ=n(n+1)/4, σ²=n(n+1)(2n+1)/24';comment='Normal approximation for larger n.'}}else if(k==='mann'){let n1=+v('n1'),n2=+v('n2'),N=n1+n2,mu=n1*n2/2,sd=Math.sqrt(n1*n2*(N+1)/12),z=invNormal(1-alpha/2);value='U ≈ '+(mu-z*sd).toFixed(4)+' to '+(mu+z*sd).toFixed(4);formula='μU=n₁n₂/2, σU=√[n₁n₂(n₁+n₂+1)/12]';comment='Normal approximation with continuity ignored.'}else if(k==='kw'){let g=+v('groups'),crit=chiinv(1-alpha,g-1),stat=+v('stat');value=crit.toFixed(6);formula='KW ≈ χ² critical with df=k−1';comment='If observed H='+stat.toFixed(3)+', '+(stat>crit?'reject':'do not reject')+' H₀ at α='+alpha+'.'}else if(k==='dfuller'){let m=v('model'),a=alpha,crit=m==='No constant'?(a<=.01?-2.58:-1.95):m==='Intercept only'?(a<=.01?-3.43:-2.86):(a<=.01?-3.96:-3.41);value=crit.toFixed(3);formula='Compare DF statistic with model-specific nonstandard critical value';comment='Asymptotic Dickey-Fuller reference value; finite-sample MacKinnon values can differ.'}else if(k==='samplesize'){let conf=+v('confidence'),e=+v('e'),p=+v('p'),z=invNormal((1+conf)/2);value=Math.ceil(z*z*p*(1-p)/(e*e));formula='n=z²p(1−p)/e²';comment='Independent simple-random-sample proportion approximation.'}else if(k==='log'){value=Math.log10(x).toFixed(4);formula='log₁₀(x)';comment='Four-place common logarithm.'}else if(k==='random'){let n=Math.min(100,Math.max(1,+v('count'))),a=[];for(let i=0;i<n;i++)a.push(String(Math.floor(Math.random()*100)).padStart(2,'0'));value=a.join('  ');formula='Uniform pseudorandom integer generation';comment='Generated in the browser; not a published random-number table.'}else if(k==='rfromz'){value=Math.tanh(x).toFixed(6);formula='r=tanh(z)';comment='Inverse Fisher transformation.'}else{value='—';formula='—';comment='Not available.'}out(value,formula,comment)}
+render();
+</script></body></html>
