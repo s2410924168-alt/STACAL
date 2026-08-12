@@ -1,3 +1,155 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Statistical Tables</title><link rel="stylesheet" href="styles.css"></head><body><nav class="nav"><div class="logo">Statistical Hub</div><a href="index.html">Home</a><a href="statistical-tools.html">Statistical Tools</a><a href="distributions.html">Distributions</a><a href="statistical-tables.html">Statistical Tables</a><a href="formulas.html">Formula</a><a href="about.html">About</a></nav><div class="container"><h1>Statistical Tables</h1><p class="muted">Select one test, enter only the required inputs, and get one requested value.</p><div class="panel"><div class="field"><label>Select Test / Table</label><select id="test" onchange="build()"><option value="z">01 — Ordinates (Y) of the Standard Normal Curve</option><option value="z">02 — Standard Normal Probability Table (Positive)</option><option value="z">03 — Standard Normal Probability Table (Negative)</option><option value="t">04 — Student's t Distribution</option><option value="chi">05 — Chi-Square Distribution</option><option value="f">06 — F Distribution — 95th Percentile</option><option value="f">07 — F Distribution — 99th Percentile</option><option value="duncan">08 — Duncan's Multiple Range Test — 1%</option><option value="duncan">09 — Duncan's Multiple Range Test — 5%</option><option value="dw">10 — Durbin-Watson d Statistic</option><option value="ks1">11 — Kolmogorov-Smirnov One-Sample Test</option><option value="ks2">12 — Kolmogorov-Smirnov Two-Sample — One Tailed</option><option value="ks2">13 — Kolmogorov-Smirnov Two-Sample — Two Tailed</option><option value="ks2">14 — Kolmogorov-Smirnov Two-Sample — Large Samples</option><option value="corr">15 — Correlation Coefficient — 5% and 1%</option><option value="z">16 — z in Terms of Correlation Coefficient r</option><option value="z">17 — Correlation Coefficient r in Terms of z</option><option value="spearman">18 — Spearman Rank Correlation rₛ</option><option value="binom">19 — Binomial Test — Exact Probabilities</option><option value="binom">20 — Binomial Distribution</option><option value="runs">21 — Runs Test — Critical Values</option><option value="wilcoxon">22 — Wilcoxon Signed-Rank Test — T⁺</option><option value="mann">23 — Wilcoxon-Mann-Whitney — W</option><option value="kw">24 — Kruskal-Wallis — KW</option><option value="dfuller">25 — Dickey-Fuller Unit Root Test</option><option value="samplesize">26 — Required Sample Size</option><option value="log">27 — Four-Place Common Logarithms</option><option value="random">28 — Table of Random Numbers</option><option value="q">29 — Studentized Range (q) / Tukey HSD</option></select></div><div id="inputs"></div><div id="result"></div></div></div><script>function field(id,label,value,options){let s='<div class="field"><label>'+label+'</label>';if(options)s+='<select id="'+id+'">'+options.map(x=>'<option>'+x+'</option>').join('');else s+='<input id="'+id+'" value="'+value+'">';return s+'</div>'}
-function build(){let k=test.value,h='';if(k==='t')h=field('df','Degrees of Freedom (df)','26')+field('a','Significance Level (α)','0.05',['0.10','0.05','0.025','0.01'])+field('tail','Test Type','Two-tailed',['Two-tailed','One-tailed']);else if(k==='chi')h=field('df','Degrees of Freedom (df)','10')+field('a','Significance Level (α)','0.05',['0.10','0.05','0.025','0.01']);else if(k==='f')h=field('d1','Numerator df (df₁)','1')+field('d2','Denominator df (df₂)','26')+field('a','Significance Level (α)','0.05',['0.10','0.05','0.01']);else if(k==='q')h=field('g','Number of Groups (k)','4')+field('df','Error df','20')+field('a','Significance Level (α)','0.05',['0.05','0.01']);else if(['corr','spearman'].includes(k))h=field('n','Sample Size (n)','30')+field('a','Significance Level (α)','0.05',['0.05','0.01']);else if(k==='ks1')h=field('n','Sample Size (n)','30')+field('a','Significance Level (α)','0.05',['0.05','0.01']);else if(k==='ks2')h=field('n1','Sample Size n₁','20')+field('n2','Sample Size n₂','20')+field('a','Significance Level (α)','0.05',['0.05','0.01']);else if(['mann'].includes(k))h=field('n1','Sample Size n₁','10')+field('n2','Sample Size n₂','10')+field('a','Significance Level (α)','0.05',['0.05','0.01']);else if(['wilcoxon','runs'].includes(k))h=field('n','Sample Size (n)','10')+field('a','Significance Level (α)','0.05',['0.05','0.01']);else if(k==='dw')h=field('n','Observations (n)','30')+field('p','Predictors (k)','2');else if(k==='duncan')h=field('g','Groups','5')+field('df','Error df','20')+field('a','α','0.05',['0.05','0.01']);else if(k==='samplesize')h=field('c','Confidence','0.95',['0.90','0.95','0.99'])+field('e','Margin of Error','0.05');else if(k==='log')h=field('x','Number (x)','10');else if(k==='random')h=field('n','Number of values','10');else h=field('x','Input value','1.96');inputs.innerHTML='<div class="form-grid">'+h+'</div><br><button class="btn" onclick="calc()">Find Value</button>';result.innerHTML=''}
-function calc(){let k=test.value,o='';if(k==='t'){let known={'26-0.05-Two-tailed':'2.0555','1-0.05-Two-tailed':'12.7062','2-0.05-Two-tailed':'4.3027','3-0.05-Two-tailed':'3.1824','4-0.05-Two-tailed':'2.7764','5-0.05-Two-tailed':'2.5706'};o=known[df.value+'-'+a.value+'-'+tail.value]||'Use the complete t critical-value table.'}else if(k==='chi'){let known={'10-0.05':'18.307','5-0.05':'11.070','1-0.05':'3.841','20-0.05':'31.410','26-0.05':'38.885'};o=known[df.value+'-'+a.value]||'Use the complete χ² critical-value table.'}else if(k==='f'){let known={'1-26-0.05':'4.2252','1-10-0.05':'4.9646','2-26-0.05':'3.3690','3-26-0.05':'2.9912'};o=known[d1.value+'-'+d2.value+'-'+a.value]||'Use the complete F critical-value table.'}else if(k==='q'){let known={'4-20-0.05':'3.958','5-20-0.05':'4.232','4-20-0.01':'5.091'};o=known[g.value+'-'+df.value+'-'+a.value]||'Use the complete q/Tukey table.'}else if(k==='ks1')o=(1.36/Math.sqrt(+n.value)).toFixed(4);else if(k==='ks2')o=(1.36*Math.sqrt((+n1.value+n2.value)/(+n1.value*n2.value))).toFixed(4);else if(k==='corr')o=n.value==='30'?(a.value==='0.01'?'0.463':'0.361'):'Use the correlation table.';else if(k==='spearman')o=n.value==='30'?(a.value==='0.01'?'0.478':'0.364'):'Use the Spearman table.';else if(k==='samplesize'){let z=c.value==='0.99'?2.576:c.value==='0.90'?1.645:1.96;o=Math.ceil(z*z*.25/(+e.value**2))}else if(k==='log')o=Math.log10(+x.value).toFixed(4);else if(k==='random')o=Array.from({length:Math.min(100,+n.value)},()=>Math.floor(Math.random()*100)+1).join(', ');else o='Critical value will be read from the selected reference table using your inputs.';result.innerHTML='<div class="result"><div class="muted">Requested value</div><div class="big">'+o+'</div><span class="tag">'+test.options[test.selectedIndex].text+'</span></div>'}build();</script><div class="footer">Statistical Hub — Full Demo</div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Statistical Tables — Statistical Hub</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.st-wrap{max-width:1050px;margin:0 auto}
+.st-card{background:#fff;border:1px solid #d8e0eb;border-radius:14px;padding:20px}
+.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.st-field label{display:block;font-weight:700;margin-bottom:6px;color:#334155}
+.st-field input,.st-field select{width:100%;padding:11px;border:1px solid #cfd8e3;border-radius:9px;font:inherit}
+.st-actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+.st-result{margin-top:18px;border:1px solid #cfe0ff;background:#f6f9ff;border-radius:12px;padding:20px}
+.st-value{font-size:32px;font-weight:800;color:#2563eb;margin:5px 0}
+.st-note{color:#64748b;font-size:14px}
+.st-formula{margin-top:14px;background:#f8fafc;border-left:4px solid #2563eb;padding:14px;border-radius:8px}
+.st-tests{margin-top:20px}
+.st-tests select{width:100%;padding:12px;border:1px solid #cfd8e3;border-radius:9px;font:inherit}
+@media(max-width:700px){.st-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="header"><a class="brand" href="index.html"><span class="logo">Σ</span><span>Statistical <b>Hub</b></span></a>
+<button class="menu-btn" aria-label="Open menu">☰</button></header>
+<nav class="menu" aria-label="Main menu">
+<a href="index.html">🏠 Home</a><a href="tools.html">📊 Statistical Tools</a><a href="distributions.html">🎲 Distributions</a><a href="statistical-tables.html">📚 Statistical Tables</a><a href="formulas.html">∑ Formulas</a><a href="about.html">ⓘ About</a>
+</nav>
+
+<main class="page"><div class="container st-wrap">
+<div class="page-title"><div class="tag">REFERENCE</div><h1>Statistical Tables</h1>
+<p>Select a test/table, enter only the required information, and get the requested value.</p></div>
+
+<div class="st-card">
+<div class="st-tests">
+<label><b>Select Test / Table</b></label>
+<select id="stTest" onchange="renderInputs()"></select>
+</div>
+<div id="stInputs" class="st-grid" style="margin-top:16px"></div>
+<div class="st-actions"><button class="btn" onclick="calculateTableValue()">Find Value</button>
+<button class="btn secondary" onclick="renderInputs()">Reset</button></div>
+<div id="stResult"></div>
+</div>
+</div></main>
+<footer class="footer"><span>Statistical Hub</span><span>Free • Interactive • Student Friendly</span></footer>
+
+<script>
+const TESTS=[
+["Ordinates (Y) of the Standard Normal Curve","z"],
+["Standard Normal Probability Table (Positive)","z"],
+["Standard Normal Probability Table (Negative)","z"],
+["Student's t Distribution","t"],
+["Chi-Square Distribution","chi"],
+["F Distribution — 95th Percentile","f95"],
+["F Distribution — 99th Percentile","f99"],
+["Duncan's Multiple Range Test — 1%","duncan1"],
+["Duncan's Multiple Range Test — 5%","duncan5"],
+["Durbin-Watson d Statistic","dw"],
+["Kolmogorov-Smirnov One-Sample Test","ks1"],
+["Kolmogorov-Smirnov Two-Sample — One Tailed","ks2"],
+["Kolmogorov-Smirnov Two-Sample — Two Tailed","ks2"],
+["Kolmogorov-Smirnov Two-Sample — Large Samples","ks2"],
+["Correlation Coefficient — 5% and 1%","corr"],
+["z in Terms of Correlation Coefficient r","zfromr"],
+["Correlation Coefficient r in Terms of z","rfromz"],
+["Spearman Rank Correlation rₛ","spearman"],
+["Binomial Test — Exact Probabilities","binom"],
+["Binomial Distribution","binom"],
+["Runs Test — Critical Values","runs"],
+["Wilcoxon Signed-Rank Test — T⁺","wilcoxon"],
+["Wilcoxon-Mann-Whitney — W","mann"],
+["Kruskal-Wallis — KW","kw"],
+["Dickey-Fuller Unit Root Test","dfuller"],
+["Required Sample Size","samplesize"],
+["Four-Place Common Logarithms","log"],
+["Table of Random Numbers","random"],
+["Studentized Range (q) / Tukey HSD","q"]
+];
+
+const sel=document.getElementById("stTest");
+TESTS.forEach((t,i)=>{const o=document.createElement("option");o.value=t[1];o.textContent=(String(i+1).padStart(2,"0"))+". "+t[0];sel.appendChild(o)});
+
+function fld(id,label,value,opts){
+ let s='<div class="st-field"><label>'+label+'</label>';
+ if(opts) s+='<select id="'+id+'">'+opts.map(x=>'<option>'+x+'</option>').join('')+'</select>';
+ else s+='<input id="'+id+'" value="'+value+'">';
+ return s+'</div>';
+}
+function renderInputs(){
+ const k=sel.value; let h="";
+ if(k==="t") h=fld("df","Degrees of Freedom (df)","26")+fld("alpha","Significance Level (α)","0.05",["0.10","0.05","0.025","0.01"])+fld("tail","Tail","Two-tailed",["Two-tailed","One-tailed"]);
+ else if(k==="chi") h=fld("df","Degrees of Freedom (df)","10")+fld("alpha","Significance Level (α)","0.05",["0.10","0.05","0.01"]);
+ else if(k==="f95"||k==="f99") h=fld("df1","Numerator df (df₁)","1")+fld("df2","Denominator df (df₂)","26")+fld("alpha","Significance Level (α)",k==="f95"?"0.05":"0.01");
+ else if(k==="q") h=fld("groups","Number of groups (k)","4")+fld("df","Error df","20")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
+ else if(["corr","spearman"].includes(k)) h=fld("n","Sample size (n)","30")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
+ else if(k==="ks1") h=fld("n","Sample size (n)","30")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
+ else if(k==="ks2") h=fld("n1","Sample size n₁","20")+fld("n2","Sample size n₂","20")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
+ else if(["mann"].includes(k)) h=fld("n1","Sample size n₁","10")+fld("n2","Sample size n₂","10")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
+ else if(["wilcoxon","runs"].includes(k)) h=fld("n","Sample size (n)","10")+fld("alpha","Significance Level (α)","0.05",["0.05","0.01"]);
+ else if(k==="dw") h=fld("n","Observations (n)","30")+fld("p","Number of predictors (k)","2");
+ else if(k==="duncan1"||k==="duncan5") h=fld("groups","Number of groups","5")+fld("df","Error df","20")+fld("alpha","Significance Level (α)",k==="duncan1"?"0.01":"0.05");
+ else if(k==="samplesize") h=fld("confidence","Confidence level","0.95",["0.90","0.95","0.99"])+fld("e","Margin of error","0.05");
+ else if(k==="log") h=fld("x","Number (x)","10");
+ else if(k==="random") h=fld("count","Number of random values","10");
+ else if(k==="z"||k==="zfromr"||k==="rfromz") h=fld("x","Input value","1.96");
+ else h=fld("x","Input value","1");
+ document.getElementById("stInputs").innerHTML=h;
+ document.getElementById("stResult").innerHTML="";
+}
+function val(id){return document.getElementById(id)?.value}
+function calculateTableValue(){
+ const k=sel.value; let out=""; let formula=""; let comment="";
+ if(k==="t"){
+   const map={"1-0.05-Two-tailed":"12.7062","2-0.05-Two-tailed":"4.3027","3-0.05-Two-tailed":"3.1824","4-0.05-Two-tailed":"2.7764","5-0.05-Two-tailed":"2.5706","26-0.05-Two-tailed":"2.0555"};
+   out=map[val("df")+"-"+val("alpha")+"-"+val("tail")]||"Reference-table lookup required for this combination.";
+   formula="t = (x̄ − μ₀)/(s/√n)"; comment="Critical t value depends on df, α and tail.";
+ }else if(k==="chi"){
+   const map={"1-0.05":"3.841","5-0.05":"11.070","10-0.05":"18.307","20-0.05":"31.410","26-0.05":"38.885"};
+   out=map[val("df")+"-"+val("alpha")]||"Reference-table lookup required for this combination.";
+   formula="χ² = Σ (O − E)²/E"; comment="Critical value depends on df and α.";
+ }else if(k==="f95"||k==="f99"){
+   const map={"1-26-0.05":"4.2252","1-10-0.05":"4.9646","2-26-0.05":"3.3690","3-26-0.05":"2.9912"};
+   out=map[val("df1")+"-"+val("df2")+"-"+val("alpha")]||"Reference-table lookup required for this combination.";
+   formula="F = MS₁/MS₂"; comment="F critical value depends on numerator df, denominator df and α.";
+ }else if(k==="q"){
+   const map={"4-20-0.05":"3.958","5-20-0.05":"4.232","4-20-0.01":"5.091"};
+   out=map[val("groups")+"-"+val("df")+"-"+val("alpha")]||"Reference-table lookup required for this combination.";
+   formula="HSD = q × √(MSE/r)"; comment="Studentized range q is used with Tukey HSD.";
+ }else if(k==="ks1"){
+   out=(1.36/Math.sqrt(+val("n"))).toFixed(4); formula="Dcrit ≈ Kα/√n"; comment="Demo uses the common 5% constant Kα ≈ 1.36.";
+ }else if(k==="ks2"){
+   out=(1.36*Math.sqrt((+val("n1")+ +val("n2"))/(+val("n1")*+val("n2")))).toFixed(4); formula="Dcrit ≈ Kα√((n₁+n₂)/(n₁n₂))"; comment="Demo uses the common 5% constant Kα ≈ 1.36.";
+ }else if(k==="corr"){
+   out=val("n")==="30"?(val("alpha")==="0.01"?"0.463":"0.361"):"Reference-table lookup required for this n and α.";
+   formula="r = [nΣxy−ΣxΣy]/√([nΣx²−(Σx)²][nΣy²−(Σy)²])"; comment="Critical correlation depends on n and significance level.";
+ }else if(k==="spearman"){
+   out=val("n")==="30"?(val("alpha")==="0.01"?"0.478":"0.364"):"Reference-table lookup required for this n and α.";
+   formula="rₛ = 1 − 6Σd²/[n(n²−1)]"; comment="Critical Spearman rank correlation depends on n and α.";
+ }else if(k==="samplesize"){
+   const z=val("confidence")==="0.99"?2.576:val("confidence")==="0.90"?1.645:1.96;
+   out=Math.ceil(z*z*.25/(+val("e")**2)); formula="n = z²pq/e² (using p=q=0.5)"; comment="For maximum required sample size, p=q=0.5 is used.";
+ }else if(k==="log"){
+   out=Math.log10(+val("x")).toFixed(4); formula="log₁₀(x)"; comment="Common logarithm, rounded to four decimal places.";
+ }else if(k==="random"){
+   out=Array.from({length:Math.min(100,+val("count"))},()=>String(Math.floor(Math.random()*100)).padStart(2,"0")).join("  ");
+   formula="Random-number generation"; comment="Random values are generated in the browser.";
+ }else{
+   out="Reference-table lookup required for this combination.";
+   formula="See the selected statistical table."; comment="Enter the required inputs and use the corresponding reference table.";
+ }
+ document.getElementById("stResult").innerHTML='<div class="st-result"><div class="st-note">Requested value</div><div class="st-value">'+out+'</div><div class="st-note">'+sel.options[sel.selectedIndex].text+'</div><div class="st-formula"><b>Formula / Rule:</b> '+formula+'<br><b>Comment:</b> '+comment+'</div></div>';
+}
+renderInputs();
+</script>
+</body></html>
