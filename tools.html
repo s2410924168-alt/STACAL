@@ -42,7 +42,8 @@
 <div class="bi-upload"><label><b>Optional: Upload CSV/XLSX for multi-variable analysis</b></label><input id="biFile" type="file" accept=".csv,.xlsx,.xls" onchange="handleBiFile(this)"><small>For two-column files, the first two columns are used for bivariate analysis. With 3+ numeric columns, a correlation matrix is also generated.</small></div>
 <div id="biDetected" class="bi-detected"></div><div id="biResult"></div>
 </div></div>
-</div></main>
+</div><div class="tool-card"><a href="anova.html" style="text-decoration:none;color:inherit"><h3>📐 ANOVA / Regression</h3><p>ANOVA table, regression statistics, coefficients, formulas and comments.</p></a></div>
+</main>
 <footer class="footer"><span>Statistical Hub</span><span>Tools</span></footer><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']]},svg:{fontCache:'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script><script src="script.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
