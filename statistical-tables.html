@@ -138,7 +138,7 @@ function calculateTableValue(){
    formula="rₛ = 1 − 6Σd²/[n(n²−1)]"; comment="Critical Spearman rank correlation depends on n and α.";
  }else if(k==="samplesize"){
    const z=val("confidence")==="0.99"?2.576:val("confidence")==="0.90"?1.645:1.96;
-   out=Math.ceil(z*z*.25/(+val("e")**2)); formula="n = z²pq/e² (using p=q=0.5)"; comment="For maximum required sample size, p=q=0.5 is used.";
+   out=Math.ceil(z*z*.25/(+val("e"))**2); formula="n = z²pq/e² (using p=q=0.5)"; comment="For maximum required sample size, p=q=0.5 is used.";
  }else if(k==="log"){
    out=Math.log10(+val("x")).toFixed(4); formula="log₁₀(x)"; comment="Common logarithm, rounded to four decimal places.";
  }else if(k==="random"){
