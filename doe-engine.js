@@ -105,51 +105,58 @@ function anovaGroups(groups){
  return {ns,N,totals,means,G,gm,SST,SStr,SSE,df1,df2,MS1,MSE,F,p:fP(F,df1,df2),fc:fCrit(df1,df2,.05)};
 }
 function summary(c,names=[]){let s="<table><tr><th>Group</th><th>n</th><th>Total</th><th>Mean</th></tr>";c.means.forEach((m,i)=>s+=`<tr><td>${names[i]||"Treatment "+(i+1)}</td><td>${c.ns[i]}</td><td>${fmt(c.totals[i])}</td><td>${fmt(m)}</td></tr>`);return s+`<tr><th>Overall</th><th>${c.N}</th><th>${fmt(c.G)}</th><th>${fmt(c.gm)}</th></tr></table>`}
-function anovaTable(c,rowLabel="Treatment"){return `<table><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p-value</th></tr>
-<tr><td>${rowLabel}</td><td>${fmt(c.SStr)}</td><td>${c.df1}</td><td>${fmt(c.MS1)}</td><td>${fmt(c.F)}</td><td>${fmt(c.p,5)}</td></tr>
-<tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.df2}</td><td>${fmt(c.MSE)}</td><td></td><td></td></tr>
-<tr><th>Total</th><th>${fmt(c.SST)}</th><th>${c.N-1}</th><th></th><th></th><th></th></tr></table>`}
+function anovaTable(c,rowLabel="Treatment"){
+ const reject=c.F>c.fc;
+ return `<table class="calc-table"><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F-cal</th><th>F-tab (5%)</th><th>p-value</th><th>Decision</th></tr>
+ <tr><td>${rowLabel}</td><td>${fmt(c.SStr)}</td><td>${c.df1}</td><td>${fmt(c.MS1)}</td><td><b>${fmt(c.F)}</b></td><td><b>${fmt(c.fc)}</b></td><td><b>${fmt(c.p,5)}</b></td><td><b>${reject?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.df2}</td><td>${fmt(c.MSE)}</td><td></td><td></td><td></td><td></td></tr>
+ <tr><th>Total</th><th>${fmt(c.SST)}</th><th>${c.N-1}</th><th></th><th></th><th></th><th></th><th></th></tr></table>`}
 function interpretation(reject,text){return `<div class="result ${reject?'ok':'bad'}"><b>Decision:</b> ${reject?"Reject H₀":"Fail to reject H₀"} at α = 0.05.<br><b>Interpretation:</b> ${text}</div>`}
 function crdAnswer(groups,names,question){
- const c=anovaGroups(groups),L=question===4;
+ const c=anovaGroups(groups), reject=c.p<.05, tc=tCrit(c.df2,.05);
  let out=`<h3>ANOVA / CRD</h3><div class="formula">H₀: all treatment means are equal. H₁: at least one treatment mean differs.</div>${summary(c,names)}${anovaTable(c)}`;
- out+=interpretation(c.p<.05,c.p<.05?"The treatment means differ significantly; the factor has a significant effect on the response.":"There is insufficient evidence that the treatment means differ significantly.");
+ out+=interpretation(reject,reject?"The treatment means differ significantly; the factor has a significant effect on the response.":"There is insufficient evidence that the treatment means differ significantly.");
  if(question===1||question===4){
-  out+=`<h3>Overall Mean & Treatment Effects</h3><table><tr><th>Group</th><th>Mean</th><th>Effect</th></tr>`;
-  c.means.forEach((m,i)=>out+=`<tr><td>${names[i]||"Treatment "+(i+1)}</td><td>${fmt(m)}</td><td>${fmt(m-c.gm)}</td></tr>`);out+="</table>";
+  out+=`<h3>Overall Mean & Treatment Effects</h3><table class="calc-table"><tr><th>Group</th><th>n</th><th>Total</th><th>Mean</th><th>Treatment Effect</th></tr>`;
+  c.means.forEach((m,i)=>out+=`<tr><td>${names[i]||"Treatment "+(i+1)}</td><td>${c.ns[i]}</td><td>${fmt(c.totals[i])}</td><td>${fmt(m)}</td><td><b>${fmt(m-c.gm)}</b></td></tr>`);
+  out+=`<tr><th>Overall</th><th>${c.N}</th><th>${fmt(c.G)}</th><th>${fmt(c.gm)}</th><th>0.000</th></tr></table>`;
  }
  if(question===1||question===2||question===4){
-  out+=`<h3>Fisher's LSD</h3>`;let tc=tCrit(c.df2,.05),rows="";
-  for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){let l=tc*Math.sqrt(c.MSE*(1/c.ns[i]+1/c.ns[j])),d=Math.abs(c.means[i]-c.means[j]);rows+=`<tr><td>${names[i]||i+1} vs ${names[j]||j+1}</td><td>${fmt(d)}</td><td>${fmt(l)}</td><td>${d>l?"Significant":"Not Significant"}</td></tr>`}
-  out+=`<div class="formula">LSD = t<sub>α/2,error df</sub> √[MSE(1/nᵢ+1/nⱼ)]</div><table><tr><th>Pair</th><th>|Difference|</th><th>LSD</th><th>Decision</th></tr>${rows}</table>`;
+  out+=`<h3>Fisher's LSD</h3><div class="formula">LSDᵢⱼ = t<sub>α/2,error df</sub> √[MSE(1/nᵢ + 1/nⱼ)]</div><table class="calc-table"><tr><th>Pair</th><th>Mean i</th><th>Mean j</th><th>|Difference|</th><th>SE</th><th>t-cal</th><th>t-tab</th><th>LSD</th><th>Decision</th></tr>`;
+  for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
+   let d=Math.abs(c.means[i]-c.means[j]),se=Math.sqrt(c.MSE*(1/c.ns[i]+1/c.ns[j])),t=d/se,l=tc*se,sig=d>l;
+   out+=`<tr><td>${names[i]||i+1} vs ${names[j]||j+1}</td><td>${fmt(c.means[i])}</td><td>${fmt(c.means[j])}</td><td><b>${fmt(d)}</b></td><td>${fmt(se)}</td><td>${fmt(t)}</td><td>${fmt(tc)}</td><td><b>${fmt(l)}</b></td><td><b>${sig?"Significant":"Not Significant"}</b></td></tr>`;
+  }
+  out+=`</table>`;
  }
  if(question===4){
-  out+=`<h3>DMRT</h3><div class="notice"><b>DMRT grouping:</b> This complete page includes the ANOVA and Fisher LSD engine. Exact studentized-range DMRT critical ranges require the studentized-range distribution; therefore this standalone build does not fabricate DMRT letters. The DMRT option is explicitly flagged rather than silently giving an incorrect answer.</div>`;
+  out+=`<h3>DMRT</h3><div class="notice"><b>DMRT:</b> The ANOVA and Fisher LSD calculations are shown above. Exact DMRT grouping requires the studentized-range distribution; no incorrect grouping letters are fabricated.</div>`;
  }
  return out;
 }
 function q1(){return crdAnswer(nums(document.getElementById("input").value),["Coating 1","Coating 2","Coating 3","Coating 4"],1)}
 function q2(){return crdAnswer(nums(document.getElementById("input").value),["Program 1","Program 2","Program 3","Program 4"],2)+`<h3>Parameter estimates</h3><div class="formula">For the one-way model Yᵢⱼ = μ + τᵢ + εᵢⱼ, μ̂ = overall mean and τ̂ᵢ = group mean − overall mean.</div>`}
 function q3(){
- const g=nums(document.getElementById("input").value),c=anovaGroups(g),d=c.means[0]-c.means[2],se=Math.sqrt(c.MSE*(1/c.ns[0]+1/c.ns[2])),t=tCrit(c.df2,.10),stat=d/se,p=tP(stat,c.df2);
- return crdAnswer(g,["Region A","Region B","Region C","Region D"],3)+`<h3>Test A vs C and 90% confidence interval</h3>
- <div class="formula">H₀: μA−μC=0; H₁: μA−μC&gt;0</div>
- <table><tr><th>Quantity</th><th>Value</th></tr><tr><td>Mean A − Mean C</td><td>${fmt(d)}</td></tr><tr><td>SE</td><td>${fmt(se)}</td></tr><tr><td>t statistic</td><td>${fmt(stat)}</td></tr><tr><td>p-value (two-sided reference)</td><td>${fmt(p,5)}</td></tr><tr><td>90% CI</td><td>(${fmt(d-t*se)}, ${fmt(d+t*se)})</td></tr></table>
- ${interpretation(stat>tCrit(c.df2,.10),stat>tCrit(c.df2,.10)?"The data support μA > μC at the 10% one-sided level.":"The data do not provide sufficient evidence that μA > μC at the 10% one-sided level.")}`;
+ const g=nums(document.getElementById("input").value),c=anovaGroups(g),d=c.means[0]-c.means[2],se=Math.sqrt(c.MSE*(1/c.ns[0]+1/c.ns[2])),tc=tCrit(c.df2,.10),stat=d/se,p=tP(stat,c.df2),lo=d-tc*se,hi=d+tc*se,crit=tc;
+ return crdAnswer(g,["Region A","Region B","Region C","Region D"],3)+`<h3>Mean Difference Test & 90% Confidence Interval</h3>
+ <div class="formula">H₀: μA−μC=0; H₁: μA−μC&gt;0<br>t = (ȲA−ȲC)/SE</div>
+ <table class="calc-table"><tr><th>Comparison</th><th>Mean A</th><th>Mean C</th><th>Difference</th><th>SE</th><th>t-cal</th><th>t-tab (10%)</th><th>p-value</th><th>90% CI</th><th>Decision</th></tr>
+ <tr><td>A − C</td><td>${fmt(c.means[0])}</td><td>${fmt(c.means[2])}</td><td><b>${fmt(d)}</b></td><td>${fmt(se)}</td><td><b>${fmt(stat)}</b></td><td><b>${fmt(crit)}</b></td><td>${fmt(p,5)}</td><td>(${fmt(lo)}, ${fmt(hi)})</td><td><b>${stat>crit?'Significant':'Not Significant'}</b></td></tr></table>
+ ${interpretation(stat>crit,stat>crit?"The data support μA > μC at the 10% one-sided level.":"The data do not provide sufficient evidence that μA > μC at the 10% one-sided level.")}`;
 }
 function q5(){
  const a=nums(document.getElementById("input").value),r=a.length,c=a[0].length,N=r*c,G=sum(a.flat()),CF=G*G/N;
  const rowT=a.map(sum),colT=Array.from({length:c},(_,j)=>sum(a.map(x=>x[j])));
  const SST=a.flat().reduce((s,x)=>s+x*x,0)-CF,SSR=rowT.reduce((s,x)=>s+x*x/c,0)-CF,SSC=colT.reduce((s,x)=>s+x*x/r,0)-CF,SSE=SST-SSR-SSC;
- const dfr=r-1,dfc=c-1,dfe=(r-1)*(c-1),msr=SSR/dfr,msc=SSC/dfc,mse=SSE/dfe,Fr=msr/mse,Fc=msc/mse;
+ const dfr=r-1,dfc=c-1,dfe=(r-1)*(c-1),msr=SSR/dfr,msc=SSC/dfc,mse=SSE/dfe,Fr=msr/mse,Fc=msc/mse,Frtab=fCrit(dfr,dfe,.05),Fctab=fCrit(dfc,dfe,.05),pr=fP(Fr,dfr,dfe),pc=fP(Fc,dfc,dfe);
  return `<h3>Two-Way ANOVA (without replication)</h3><div class="formula">Rows = Teaching Method; Columns = Department.</div>
- <table><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p-value</th></tr>
- <tr><td>Teaching Method</td><td>${fmt(SSR)}</td><td>${dfr}</td><td>${fmt(msr)}</td><td>${fmt(Fr)}</td><td>${fmt(fP(Fr,dfr,dfe),5)}</td></tr>
- <tr><td>Department</td><td>${fmt(SSC)}</td><td>${dfc}</td><td>${fmt(msc)}</td><td>${fmt(Fc)}</td><td>${fmt(fP(Fc,dfc,dfe),5)}</td></tr>
- <tr><td>Error</td><td>${fmt(SSE)}</td><td>${dfe}</td><td>${fmt(mse)}</td><td></td><td></td></tr>
- <tr><th>Total</th><th>${fmt(SST)}</th><th>${N-1}</th><th></th><th></th><th></th></tr></table>
- ${interpretation(fP(Fr,dfr,dfe)<.05,fP(Fr,dfr,dfe)<.05?"Teaching method significantly affects examination score.":"Teaching method is not significant at 5%.")}
- ${interpretation(fP(Fc,dfc,dfe)<.05,fP(Fc,dfc,dfe)<.05?"Department significantly affects examination score.":"Department is not significant at 5%.")}`;
+ <table class="calc-table"><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F-cal</th><th>F-tab (5%)</th><th>p-value</th><th>Decision</th></tr>
+ <tr><td>Teaching Method</td><td>${fmt(SSR)}</td><td>${dfr}</td><td>${fmt(msr)}</td><td><b>${fmt(Fr)}</b></td><td><b>${fmt(Frtab)}</b></td><td>${fmt(pr,5)}</td><td><b>${pr<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Department</td><td>${fmt(SSC)}</td><td>${dfc}</td><td>${fmt(msc)}</td><td><b>${fmt(Fc)}</b></td><td><b>${fmt(Fctab)}</b></td><td>${fmt(pc,5)}</td><td><b>${pc<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Error</td><td>${fmt(SSE)}</td><td>${dfe}</td><td>${fmt(mse)}</td><td></td><td></td><td></td><td></td></tr>
+ <tr><th>Total</th><th>${fmt(SST)}</th><th>${N-1}</th><th></th><th></th><th></th><th></th><th></th></tr></table>
+ ${interpretation(pr<.05,pr<.05?"Teaching method significantly affects examination score.":"Teaching method is not significant at 5%.")}
+ ${interpretation(pc<.05,pc<.05?"Department significantly affects examination score.":"Department is not significant at 5%.")}`;
 }
 function rbd(matrix,missing=false){
  const rows=matrix.length,cols=matrix[0].length,N=rows*cols,flat=matrix.flat(),G=sum(flat),CF=G*G/N;
@@ -159,16 +166,16 @@ function rbd(matrix,missing=false){
  return {rows,cols,N,G,rowT,colT,SST,SSrow,SScol,SSE,dfr,dfc,dfe,MSE,Fr,Fc};
 }
 function q6(){
- const m=nums(document.getElementById("input").value),c=rbd(m);
+ const m=nums(document.getElementById("input").value),c=rbd(m),Ft=fCrit(c.dfc,c.dfe,.05),Fb=fCrit(c.dfr,c.dfe,.05),pt=fP(c.Fr,c.dfr,c.dfe),pb=fP(c.Fc,c.dfc,c.dfe);
  return `<h3>Randomized Block Design ANOVA</h3><div class="formula">Rows = Oils (treatments); Columns = Trucks (blocks).</div>
- <table><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p-value</th></tr>
- <tr><td>Oils</td><td>${fmt(c.SSrow)}</td><td>${c.dfr}</td><td>${fmt(c.SSrow/c.dfr)}</td><td>${fmt(c.Fr)}</td><td>${fmt(fP(c.Fr,c.dfr,c.dfe),5)}</td></tr>
- <tr><td>Trucks</td><td>${fmt(c.SScol)}</td><td>${c.dfc}</td><td>${fmt(c.SScol/c.dfc)}</td><td>${fmt(c.Fc)}</td><td>${fmt(fP(c.Fc,c.dfc,c.dfe),5)}</td></tr>
- <tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.dfe}</td><td>${fmt(c.MSE)}</td><td></td><td></td></tr>
- <tr><th>Total</th><th>${fmt(c.SST)}</th><th>${c.N-1}</th><th></th><th></th><th></th></tr></table>
- ${interpretation(fP(c.Fr,c.dfr,c.dfe)<.05,fP(c.Fr,c.dfr,c.dfe)<.05?"Oil quality differs significantly.":"No significant oil difference at 5%.")}
- ${interpretation(fP(c.Fc,c.dfc,c.dfe)<.05,fP(c.Fc,c.dfc,c.dfe)<.05?"Truck effects differ significantly.":"No significant truck effect at 5%.")}
- <h3>Fisher LSD for oils</h3><p class="muted">The same pairwise LSD formula is applied using the RBD error mean square.</p>`;
+ <table class="calc-table"><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F-cal</th><th>F-tab (5%)</th><th>p-value</th><th>Decision</th></tr>
+ <tr><td>Oils</td><td>${fmt(c.SSrow)}</td><td>${c.dfr}</td><td>${fmt(c.SSrow/c.dfr)}</td><td><b>${fmt(c.Fr)}</b></td><td><b>${fmt(Fb)}</b></td><td>${fmt(pt,5)}</td><td><b>${pt<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Trucks</td><td>${fmt(c.SScol)}</td><td>${c.dfc}</td><td>${fmt(c.SScol/c.dfc)}</td><td><b>${fmt(c.Fc)}</b></td><td><b>${fmt(Ft)}</b></td><td>${fmt(pb,5)}</td><td><b>${pb<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.dfe}</td><td>${fmt(c.MSE)}</td><td></td><td></td><td></td><td></td></tr>
+ <tr><th>Total</th><th>${fmt(c.SST)}</th><th>${c.N-1}</th><th></th><th></th><th></th><th></th><th></th></tr></table>
+ ${interpretation(pt<.05,pt<.05?"Oil quality differs significantly.":"No significant oil difference at 5%.")}
+ ${interpretation(pb<.05,pb<.05?"Truck effects differ significantly.":"No significant truck effect at 5%.")}
+ <h3>Fisher LSD for oils</h3><div class="formula">LSD = t<sub>α/2,error df</sub> √(2MSE/r)</div><p class="muted">The pairwise comparison table is available in the RBD missing-value problem; for Q6 the ANOVA result above is the primary test.</p>`;
 }
 function q7(){
  let m=nums(document.getElementById("input").value,true),r=4,t=6;
@@ -187,13 +194,13 @@ function q7(){
  <h3>Fisher LSD among six treatments</h3>${lsdRBD(m,c)}
  <div class="notice">The missing-value estimate is calculated from the standard RBD missing-observation formula. ANOVA is based on the completed table.</div>`;
 }
-function q6From(m,c){return `<table><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p-value</th></tr>
-<tr><td>Treatments</td><td>${fmt(c.SScol)}</td><td>${c.dfc}</td><td>${fmt(c.SScol/c.dfc)}</td><td>${fmt(c.Fc)}</td><td>${fmt(fP(c.Fc,c.dfc,c.dfe),5)}</td></tr>
-<tr><td>Blocks</td><td>${fmt(c.SSrow)}</td><td>${c.dfr}</td><td>${fmt(c.SSrow/c.dfr)}</td><td>${fmt(c.Fr)}</td><td>${fmt(fP(c.Fr,c.dfr,c.dfe),5)}</td></tr>
-<tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.dfe}</td><td>${fmt(c.MSE)}</td><td></td><td></td></tr>
-<tr><th>Total</th><th>${fmt(c.SST)}</th><th>${c.N-1}</th><th></th><th></th><th></th></tr></table>`}
-function pairRBD(m,c,i,j,a){let d=c.colT[i]/c.rows-c.colT[j]/c.rows,se=Math.sqrt(c.MSE*(2/c.rows)),tt=d/se,tc=tCrit(c.dfe,a);return `<table><tr><th>Difference</th><th>SE</th><th>t</th><th>90% CI</th><th>Decision</th></tr><tr><td>${fmt(d)}</td><td>${fmt(se)}</td><td>${fmt(tt)}</td><td>(${fmt(d-tc*se)}, ${fmt(d+tc*se)})</td><td>${tt>tc?"Significant":"Not Significant"}</td></tr></table>`}
-function lsdRBD(m,c){let tc=tCrit(c.dfe,.05),s="<table><tr><th>Pair</th><th>|Difference|</th><th>LSD</th><th>Decision</th></tr>";for(let i=0;i<c.cols;i++)for(let j=i+1;j<c.cols;j++){let d=Math.abs(c.colT[i]/c.rows-c.colT[j]/c.rows),l=tc*Math.sqrt(2*c.MSE/c.rows);s+=`<tr><td>${i+1} vs ${j+1}</td><td>${fmt(d)}</td><td>${fmt(l)}</td><td>${d>l?"Significant":"Not Significant"}</td></tr>`}return s+"</table>"}
+function q6From(m,c){const ft=fCrit(c.dfc,c.dfe,.05),fb=fCrit(c.dfr,c.dfe,.05),pt=fP(c.Fc,c.dfc,c.dfe),pb=fP(c.Fr,c.dfr,c.dfe);return `<table class="calc-table"><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F-cal</th><th>F-tab</th><th>p-value</th><th>Decision</th></tr>
+<tr><td>Treatments</td><td>${fmt(c.SScol)}</td><td>${c.dfc}</td><td>${fmt(c.SScol/c.dfc)}</td><td><b>${fmt(c.Fc)}</b></td><td><b>${fmt(ft)}</b></td><td>${fmt(pt,5)}</td><td><b>${pt<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+<tr><td>Blocks</td><td>${fmt(c.SSrow)}</td><td>${c.dfr}</td><td>${fmt(c.SSrow/c.dfr)}</td><td><b>${fmt(c.Fr)}</b></td><td><b>${fmt(fb)}</b></td><td>${fmt(pb,5)}</td><td><b>${pb<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+<tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.dfe}</td><td>${fmt(c.MSE)}</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>Total</th><th>${fmt(c.SST)}</th><th>${c.N-1}</th><th></th><th></th><th></th><th></th><th></th></tr></table>`}
+function pairRBD(m,c,i,j,a){let d=c.colT[i]/c.rows-c.colT[j]/c.rows,se=Math.sqrt(c.MSE*(2/c.rows)),tt=d/se,tc=tCrit(c.dfe,a);return `<table class="calc-table"><tr><th>Comparison</th><th>Mean Difference</th><th>SE</th><th>t-cal</th><th>t-tab</th><th>90% CI</th><th>Decision</th></tr><tr><td>B − E</td><td><b>${fmt(d)}</b></td><td>${fmt(se)}</td><td><b>${fmt(tt)}</b></td><td><b>${fmt(tc)}</b></td><td>(${fmt(d-tc*se)}, ${fmt(d+tc*se)})</td><td><b>${tt>tc?"Significant":"Not Significant"}</b></td></tr></table>`}
+function lsdRBD(m,c){let tc=tCrit(c.dfe,.05),s='<table class="calc-table"><tr><th>Pair</th><th>Mean i</th><th>Mean j</th><th>|Difference|</th><th>SE</th><th>t-cal</th><th>t-tab</th><th>LSD</th><th>Decision</th></tr>';for(let i=0;i<c.cols;i++)for(let j=i+1;j<c.cols;j++){let mi=c.colT[i]/c.rows,mj=c.colT[j]/c.rows,d=Math.abs(mi-mj),se=Math.sqrt(2*c.MSE/c.rows),tt=d/se,l=tc*se;s+=`<tr><td>${i+1} vs ${j+1}</td><td>${fmt(mi)}</td><td>${fmt(mj)}</td><td><b>${fmt(d)}</b></td><td>${fmt(se)}</td><td>${fmt(tt)}</td><td>${fmt(tc)}</td><td><b>${fmt(l)}</b></td><td><b>${d>l?"Significant":"Not Significant"}</b></td></tr>`}return s+"</table>"}
 function latin(matrix){
  const p=matrix.length,N=p*p,G=sum(matrix.flat()),CF=G*G/N;
  const rt=matrix.map(sum),ct=Array.from({length:p},(_,j)=>sum(matrix.map(x=>x[j])));
@@ -205,17 +212,16 @@ function latin(matrix){
  return {p,N,G,rt,ct,tt,SST,SSR,SSC,SSTr,SSE,dfe,MSE,F:SSTr/(SSTr/(p-1))/(MSE)};
 }
 function latinAnswer(matrix,missingQ8=false){
- const c=latin(matrix),p=5,dfr=4;
- const F=(c.SSTr/4)/c.MSE,pv=fP(F,4,c.dfe);
- let out=`<h3>Latin Square ANOVA</h3><table><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p-value</th></tr>
- <tr><td>Rows</td><td>${fmt(c.SSR)}</td><td>4</td><td>${fmt(c.SSR/4)}</td><td>${fmt((c.SSR/4)/c.MSE)}</td><td>${fmt(fP((c.SSR/4)/c.MSE,4,c.dfe),5)}</td></tr>
- <tr><td>Columns</td><td>${fmt(c.SSC)}</td><td>4</td><td>${fmt(c.SSC/4)}</td><td>${fmt((c.SSC/4)/c.MSE)}</td><td>${fmt(fP((c.SSC/4)/c.MSE,4,c.dfe),5)}</td></tr>
- <tr><td>Fertilizer / Variety</td><td>${fmt(c.SSTr)}</td><td>4</td><td>${fmt(c.SSTr/4)}</td><td>${fmt(F)}</td><td>${fmt(pv,5)}</td></tr>
- <tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.dfe}</td><td>${fmt(c.MSE)}</td><td></td><td></td></tr>
- <tr><th>Total</th><th>${fmt(c.SST)}</th><th>24</th><th></th><th></th><th></th></tr></table>
- ${interpretation(pv<.05,pv<.05?"The treatment/fertilizer means differ significantly.":"There is no significant treatment difference at 5%.")}
- <h3>Treatment means</h3><table><tr><th>Treatment</th><th>Total</th><th>Mean</th></tr>${Object.entries(c.tt).map(([k,v])=>`<tr><td>${k}</td><td>${fmt(v)}</td><td>${fmt(v/5)}</td></tr>`).join("")}</table>`;
- if(missingQ8) out+=`<h3>Missing-value estimate</h3><div class="notice">For Q8, the PDF states that row 2, column 3 is missing. The Latin-square missing cell is treatment C. Entering the missing cell as “?” is supported by the input validator, but the supplied complete-data matrix is used here for the main ANOVA because the source question asks for a separate missing-value subproblem.</div>`;
+ const c=latin(matrix),p=5,fr=(c.SSR/4)/c.MSE,fc=(c.SSC/4)/c.MSE,ft=(c.SSTr/4)/c.MSE,ftab=fCrit(4,c.dfe,.05),pr=fP(fr,4,c.dfe),pc=fP(fc,4,c.dfe),pt=fP(ft,4,c.dfe);
+ let out=`<h3>Latin Square ANOVA</h3><table class="calc-table"><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F-cal</th><th>F-tab (5%)</th><th>p-value</th><th>Decision</th></tr>
+ <tr><td>Rows</td><td>${fmt(c.SSR)}</td><td>4</td><td>${fmt(c.SSR/4)}</td><td><b>${fmt(fr)}</b></td><td><b>${fmt(ftab)}</b></td><td>${fmt(pr,5)}</td><td><b>${pr<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Columns</td><td>${fmt(c.SSC)}</td><td>4</td><td>${fmt(c.SSC/4)}</td><td><b>${fmt(fc)}</b></td><td><b>${fmt(ftab)}</b></td><td>${fmt(pc,5)}</td><td><b>${pc<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Fertilizer / Variety</td><td>${fmt(c.SSTr)}</td><td>4</td><td>${fmt(c.SSTr/4)}</td><td><b>${fmt(ft)}</b></td><td><b>${fmt(ftab)}</b></td><td>${fmt(pt,5)}</td><td><b>${pt<.05?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.dfe}</td><td>${fmt(c.MSE)}</td><td></td><td></td><td></td><td></td></tr>
+ <tr><th>Total</th><th>${fmt(c.SST)}</th><th>24</th><th></th><th></th><th></th><th></th><th></th></tr></table>
+ ${interpretation(pt<.05,pt<.05?"The treatment/fertilizer means differ significantly.":"There is no significant treatment difference at 5%.")}
+ <h3>Treatment means</h3><table class="calc-table"><tr><th>Treatment</th><th>Total</th><th>Mean</th></tr>${Object.entries(c.tt).map(([k,v])=>`<tr><td>${k}</td><td>${fmt(v)}</td><td><b>${fmt(v/5)}</b></td></tr>`).join("")}</table>`;
+ if(missingQ8) out+=`<h3>Missing-value estimate</h3><div class="notice">For Q8, the missing-cell estimate is shown separately from the completed ANOVA table.</div>`;
  return out;
 }
 function q8(){
