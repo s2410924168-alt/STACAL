@@ -1,5 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Basic Design of Experiment</title><link rel="stylesheet" href="style.css"><style>
-.doe-box{max-width:1050px;margin:auto}.doe-card{background:#fff;border:1px solid #e4e8ef;border-radius:16px;padding:22px;margin:16px 0;box-shadow:0 4px 16px #0000000d}.doe-controls{display:flex;gap:12px;max-width:360px;margin:12px 0}.doe-controls label{flex:1;font-weight:600;color:#243b5a}.doe-controls select{display:block;width:100%;margin-top:6px;padding:9px;border:1px solid #cfd7e3;border-radius:8px}.table-scroll{overflow:auto;border:1px solid #dce3ec;border-radius:10px}.input-table{width:100%;border-collapse:collapse;min-width:620px}.input-table th,.input-table td{border:1px solid #dce3ec;padding:7px;text-align:center}.input-table th{background:#eef3f9;color:#173b6c}.input-table input{width:100%;min-width:78px;border:0;outline:0;text-align:center;background:#fff;padding:9px;font:14px monospace}.doe-btn{display:inline-block;background:#173b6c;color:#fff;border:0;border-radius:9px;padding:11px 18px;cursor:pointer;margin-top:10px}.doe-pill{display:inline-block;background:#eaf1fa;color:#173b6c;border-radius:18px;padding:7px 11px;margin:4px}.doe-test{display:flex;justify-content:space-between;gap:15px;align-items:center;border:1px solid #dce3ec;border-radius:12px;padding:14px;margin:9px 0;background:#fafbfd}.doe-test h4{margin:0}.doe-test p{display:none}.doe-test button{white-space:nowrap}.doe-hidden{display:none}.doe-note{background:#fff8e8;border-left:5px solid #c18a21;padding:12px;border-radius:8px;margin-top:12px}.doe-result-table{margin-left:auto;margin-right:auto;max-width:1000px}.doe-result-wrap{max-width:1000px;margin:0 auto}.doe-result-wrap table{margin-left:auto;margin-right:auto}</style></head><body>
+.doe-box{max-width:1050px;margin:auto}.doe-card{background:#fff;border:1px solid #e4e8ef;border-radius:16px;padding:22px;margin:16px 0;box-shadow:0 4px 16px #0000000d}.doe-controls{display:flex;gap:12px;max-width:360px;margin:12px 0}.doe-controls label{flex:1;font-weight:600;color:#243b5a}.doe-controls select{display:block;width:100%;margin-top:6px;padding:9px;border:1px solid #cfd7e3;border-radius:8px}.table-scroll{overflow:auto;border:1px solid #dce3ec;border-radius:10px}.input-table{width:100%;border-collapse:collapse;min-width:620px}.input-table th,.input-table td{border:1px solid #dce3ec;padding:7px;text-align:center}.input-table th{background:#eef3f9;color:#173b6c}.input-table input{width:100%;min-width:78px;border:0;outline:0;text-align:center;background:#fff;padding:9px;font:14px monospace}.doe-btn{display:inline-block;background:#173b6c;color:#fff;border:0;border-radius:9px;padding:11px 18px;cursor:pointer;margin-top:10px}.doe-pill{display:inline-block;background:#eaf1fa;color:#173b6c;border-radius:18px;padding:7px 11px;margin:4px}.doe-test{display:flex;justify-content:space-between;gap:15px;align-items:center;border:1px solid #dce3ec;border-radius:12px;padding:14px;margin:9px 0;background:#fafbfd}.doe-test h4{margin:0}.doe-test p{display:none}.doe-test button{white-space:nowrap}.doe-hidden{display:none}.doe-note{background:#fff8e8;border-left:5px solid #c18a21;padding:12px;border-radius:8px;margin-top:12px}.doe-result-table{margin-left:auto;margin-right:auto;max-width:1000px}.doe-result-wrap{max-width:1000px;margin:0 auto}.doe-result-wrap table{margin-left:auto;margin-right:auto}
+.doe-category{border:1px solid #dce3ec;border-radius:12px;margin:10px 0;background:#fbfcfe;overflow:hidden}.doe-category summary{cursor:pointer;padding:13px 15px;font-weight:700;color:#173b6c;background:#eef3f9}.doe-category summary span{float:right;font-weight:500;color:#66758a}.doe-method{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 15px;border-top:1px solid #e7ebf1;background:#fff}.doe-method small{display:block;color:#718096;margin-top:3px}.doe-catalog{margin-top:14px}.catalog-toggle{background:#4f6480}.app-note{background:#f4f8fd;border-left:5px solid #173b6c;padding:12px;border-radius:8px;margin-top:12px}
+</style></head><body>
 <header class="header"><a class="brand" href="index.html"><span class="logo">Σ</span><span>Statistical <b>Hub</b></span></a><button class="menu-btn" aria-label="Open menu" aria-expanded="false">☰</button></header>
 <nav class="menu" aria-label="Main menu"><a href="index.html">🏠 Home</a><a href="tools.html">📊 Statistical Tools</a><a href="distributions.html">🎲 Distributions</a><a href="statistical-tables.html">📚 Statistical Tables</a><a href="formulas.html">∑ Formulas</a><a href="about.html">ⓘ About</a></nav>
 <main class="page"><div class="container doe-box"><div class="page-title"><div class="tag">STATISTICAL TOOLS</div><h1>Basic Design of Experiment</h1><p>Enter data first. The system detects the design and shows only the applicable tests.</p></div>
@@ -9,7 +11,7 @@
 <div><button class="doe-btn" onclick="detectDOE()">Check Data & Show Available Tests</button><button class="doe-btn" style="background:#66758a" onclick="loadDemo()">Load Example</button><button class="doe-btn" style="background:#8b5a3c" onclick="clearTable()">Clear Data</button></div><div id="detectMsg"></div></div>
 <div id="available" class="doe-card doe-hidden"><h2>2. Available Tests</h2><p>Select a test. Its <b>answer, formula, calculation, comment and interpretation</b> will open on a separate result page.</p><div id="testList"></div></div>
 </div></main><footer class="footer"><span>Statistical Hub</span><span>Basic Design of Experiment</span></footer>
-<script src="script.js"></script><script>
+<script src="script.js"></script><script src="doe-engine.js"></script><script>
 let savedMatrix=[];
 function normalizeDimension(el){
  const v=parseInt(el.value,10); if(!Number.isFinite(v)||v<1) el.value=1;
@@ -52,32 +54,21 @@ function detectDOE(){
  if(g.some(r=>r.every(x=>x===null))){document.getElementById('detectMsg').innerHTML='<div class="doe-note">Please do not leave a complete row empty.</div>';return}
  savedMatrix=g;sessionStorage.setItem('DOE_DATA',matrixToText(g));
  const equal=counts.every(n=>n===counts[0]),allFull=missing===0;
- let html='',design='';
- // Design-specific detection first. Fixed-shape designs are only offered when their structure is unambiguous.
- if(rows===5&&cols===4&&allFull){design='Two-Way ANOVA';html+=addTest('q5','Two-Way ANOVA');}
- else if(rows===3&&cols===5&&allFull){design='Randomized Block Design';html+=addTest('q6','Randomized Block Design ANOVA');}
- else if(rows===4&&cols===6&&missing===1){design='Randomized Block Design with Missing Observation';html+=addTest('q7','RBD + Missing Value');}
- else if(rows===5&&cols===5&&missing===1){design='Latin Square Design with Missing Observation';html+=addTest('q8','Latin Square + Missing Value');}
- else if(rows===5&&cols===5&&allFull){
-   // A 5×5 complete table can represent either a CRD with five treatments or a Latin square.
-   // Show the two genuinely possible design-level tests instead of unrelated sub-tests.
-   design='5×5 Complete Design — CRD / Latin Square';
-   html+=addTest('q4','CRD + Fisher LSD + DMRT');
-   html+=addTest('q9','Latin Square ANOVA');
- }
+ let html='',design='',app=new Set();
+ // Only genuinely applicable methods are surfaced as primary tests.
+ if(rows===5&&cols===4&&allFull){design='Two-Way ANOVA / Factorial';html+=addTest('q5','Two-Way ANOVA');app=new Set(['twofactor','tworep','twonorep','mainA','mainB','interaction']);}
+ else if(rows===3&&cols===5&&allFull){design='Randomized Complete Block Design';html+=addTest('q6','Randomized Complete Block Design (RCBD)');app=new Set(['rcbd','rcbdeffect','rcbdpost','lsd','tukey','dmrt']);}
+ else if(rows===4&&cols===6&&missing===1){design='RCBD with Missing Observation';html+=addTest('q7','RBD + Missing Value');app=new Set(['rcbd','rcbdeffect','rcbdpost','lsd','tukey','dmrt']);}
+ else if(rows===5&&cols===5&&missing===1){design='Latin Square Design with Missing Observation';html+=addTest('q8','Latin Square + Missing Value');app=new Set(['latin','latinan','lsd','tukey']);}
+ else if(rows===5&&cols===5&&allFull){design='5×5 Complete Design — CRD / Latin Square';html+=addTest('q4','CRD + Fisher LSD + DMRT');html+=addTest('q9','Latin Square ANOVA');app=new Set(['oneway','overall','effect','lsd','tukey','dmrt','latin','latinan']);}
  else if(cols>=2){
-   if(equal&&allFull){
-     design='Completely Randomized Design / One-Way ANOVA (equal observations)';
-     html+=addTest('q1anova','One-Way ANOVA');
-     html+=addTest('q1','Treatment Effect');
-   } else if(!equal){
-     design='Completely Randomized Design / One-Way ANOVA (unequal observations)';
-     html+=addTest('q2','Unequal-Observation One-Way ANOVA');
-   }
+   if(equal&&allFull){design='Completely Randomized Design / One-Way ANOVA (equal observations)';html+=addTest('q1anova','One-Way ANOVA');html+=addTest('q1','Treatment Effect');app=new Set(['oneway','overall','effect','contrast','orthcontrast','lsd','tukey','dmrt','scheffe','bonf','polycontrast']);}
+   else if(!equal){design='Completely Randomized Design / One-Way ANOVA (unequal observations)';html+=addTest('q2','Unequal-Observation One-Way ANOVA');app=new Set(['unequal','overall','effect','contrast','lsd','tukey','dmrt','scheffe','bonf']);}
  }
  if(!html) design='No supported design was detected from this data shape.';
  document.getElementById('detectMsg').innerHTML=`<div style="margin-top:12px"><span class="doe-pill">Detected: ${design}</span><span class="doe-pill">Rows: ${rows}</span><span class="doe-pill">Columns: ${cols}</span><span class="doe-pill">Missing: ${missing}</span></div>`;
- document.getElementById('testList').innerHTML=html||'<div class="doe-note">No supported design was detected from this data shape.</div>';
+ document.getElementById('testList').innerHTML=(html||'<div class="doe-note">No supported design was detected from this data shape.</div>')+
+   (html?`<div class="app-note"><b>Research DOE library:</b> the methods below are the complete master library relevant to the detected design. Only applicable categories are shown. Implemented calculators open directly; design-specific advanced methods show their required input structure.</div>${doeCatalogHTML(app)}`:'');
  document.getElementById('available').classList.remove('doe-hidden');
 }
 function loadDemo(){document.getElementById('rowCount').value='4';document.getElementById('colCount').value='4';const g=[[243,240,255,248],[258,253,233,243],[228,231,224,216],[219,216,230,219]];savedMatrix=g;buildTable(g);sessionStorage.removeItem('DOE_DATA');document.getElementById('detectMsg').innerHTML='';document.getElementById('available').classList.add('doe-hidden')}

@@ -280,3 +280,67 @@ function solveSelected(){
 }
 function q4(){const g=crdColumns(nums(document.getElementById("input").value,true));return crdAnswer(g,g.map((_,i)=>(15+i*5)+"%"),4)}
 tabs();renderForm();
+
+/* ================= Comprehensive DOE Master Library ================= */
+const DOE_MASTER_LIBRARY = [
+ {cat:'Basic / Single-Factor DOE', items:[
+  ['oneway','One-Way ANOVA / CRD'],['unequal','Unequal-Observation One-Way ANOVA'],['overall','Overall Mean Estimation'],['effect','Treatment Effect Estimation'],['contrast','Planned Contrast'],['orthcontrast','Orthogonal Contrast'],['lsd','Fisher\'s LSD'],['tukey','Tukey HSD'],['dmrt','Duncan\'s Multiple Range Test (DMRT)'],['scheffe','Scheffé Multiple Comparison'],['bonf','Bonferroni Multiple Comparison'],['polycontrast','Polynomial Contrast']
+ ]},
+ {cat:'Block Designs', items:[
+  ['rcbd','Randomized Complete Block Design (RCBD/RBD)'],['rcbdeffect','RBD Treatment Effect'],['rcbdpost','RBD Multiple Comparison'],['latin','Latin Square Design'],['latinan','Latin Square Analysis'],['graeco','Graeco-Latin Square Design'],['graecoan','Graeco-Latin Square Analysis'],['ibd','Incomplete Block Design'],['bibd','Balanced Incomplete Block Design (BIBD)']
+ ]},
+ {cat:'Factorial DOE', items:[
+  ['twofactor','Two-Factor ANOVA'],['tworep','Two-Way ANOVA with Replication'],['twonorep','Two-Way ANOVA without Replication'],['mainA','Main Effect — Factor A'],['mainB','Main Effect — Factor B'],['interaction','A × B Interaction'],['fac22','2² Full Factorial'],['fac23','2³ Full Factorial'],['fack','General 2ᵏ Full Factorial'],['fack3','3ᵏ Full Factorial'],['mixedfactor','Mixed-Level Factorial'],['higherfactor','Higher-Order Factorial'],['factoreffect','Factorial Effect Estimates'],['factorinteraction','Factorial Interaction Analysis']
+ ]},
+ {cat:'Fractional Factorial / Screening', items:[
+  ['frac','Fractional Factorial Design'],['fracgen','2^(k-p) Fractional Factorial'],['alias','Alias / Confounding Analysis'],['resolution','Resolution Analysis'],['foldover','Foldover Design'],['screen','Screening Design'],['pb','Plackett–Burman Design'],['mainscreen','Main-Effect Screening']
+ ]},
+ {cat:'Split / Special Designs', items:[
+  ['split','Split-Plot Design'],['splitanova','Split-Plot ANOVA'],['strip','Strip-Plot Design'],['nested','Nested Design'],['nestedanova','Hierarchical / Nested ANOVA'],['repeated','Repeated / Restricted-Randomization Designs'],['multistage','Multi-Stage Experimental Design']
+ ]},
+ {cat:'Response Surface Methodology', items:[
+  ['rsm1','First-Order Response Surface Model'],['rsm2','Second-Order Response Surface Model'],['ccd','Central Composite Design (CCD)'],['ccc','Circumscribed CCD (CCC)'],['cci','Inscribed CCD (CCI)'],['ccf','Face-Centered CCD (CCF)'],['bbd','Box–Behnken Design (BBD)'],['center','Center-Point Analysis'],['quad','Quadratic Model Analysis'],['lof','Lack-of-Fit Test'],['stationary','Canonical / Stationary-Point Analysis'],['rsopt','Response Surface Optimization']
+ ]},
+ {cat:'Optimization', items:[
+  ['steep','Steepest Ascent'],['descent','Steepest Descent'],['singleopt','Single-Response Optimization'],['multiopt','Multiple-Response Optimization'],['desirability','Desirability Function'],['constrained','Constrained Optimization'],['confirm','Confirmation Experiment']
+ ]},
+ {cat:'Mixture DOE', items:[
+  ['mixture','Mixture Design'],['simplexlattice','Simplex-Lattice Design'],['simplexcentroid','Simplex-Centroid Design'],['extremevertices','Extreme-Vertices Design'],['constrainedmix','Constrained Mixture Design'],['mixturescreen','Mixture Screening'],['mixprocess','Mixture × Process Variable Design']
+ ]},
+ {cat:'Taguchi / Robust DOE', items:[
+  ['taguchi','Taguchi Orthogonal Array'],['l4','L4 Orthogonal Array'],['l8','L8 Orthogonal Array'],['l9','L9 Orthogonal Array'],['l12','L12 Orthogonal Array'],['l16','L16 Orthogonal Array'],['l18','L18 Orthogonal Array'],['l27','L27 Orthogonal Array'],['sn','Signal-to-Noise Ratio'],['smaller','Smaller-the-Better'],['larger','Larger-the-Better'],['nominal','Nominal-the-Best'],['robust','Robust Parameter Design']
+ ]},
+ {cat:'Computer-Aided / Optimal Designs', items:[
+  ['dopt','D-Optimal Design'],['aopt','A-Optimal Design'],['gopt','G-Optimal Design'],['customopt','Custom / Optimal Design'],['repair','Design Repair'],['sequential','Sequential Experiment Design']
+ ]}
+];
+const DOE_IMPLEMENTED = new Set(['oneway','unequal','overall','effect','lsd','tukey','dmrt','rcbd','latin','tworep','twonorep']);
+function doeCatalogHTML(applicableCats){
+ let html='<div class="doe-catalog">';
+ DOE_MASTER_LIBRARY.forEach(sec=>{
+   const relevant=applicableCats ? sec.items.filter(x=>applicableCats.has(x[0])) : sec.items;
+   if(!relevant.length)return;
+   html+=`<details class="doe-category" open><summary>${sec.cat} <span>${relevant.length} methods</span></summary>`;
+   relevant.forEach(([id,title])=>{
+     const impl=DOE_IMPLEMENTED.has(id);
+     html+=`<div class="doe-method"><div><b>${title}</b>${impl?'':'<small>Research method / design specification</small>'}</div>${impl?`<button class="doe-btn" onclick="saveAndOpen('master:${id}')">Open →</button>`:`<button class="doe-btn" style="background:#66758a" onclick="showMethodInfo('${id}')">Details →</button>`}</div>`;
+   }); html+='</details>';
+ });
+ return html+'</div>';
+}
+function showMethodInfo(id){
+ const found=DOE_MASTER_LIBRARY.flatMap(s=>s.items).find(x=>x[0]===id); if(!found)return;
+ const title=found[1];
+ const notes={
+  frac:'Requires factor columns/levels and a selected fraction or generator. The engine will not invent an alias structure.',
+  pb:'Requires factor-level design matrix; response column must be identified.',
+  ccd:'Requires factor count, center-point count and alpha choice before a CCD can be generated.',
+  bbd:'Requires number of factors and response observations; the design matrix must be specified.',
+  mixture:'Requires component proportions with sum-to-one constraints.',
+  taguchi:'Requires factor levels and a selected orthogonal array.',
+  dopt:'Requires candidate design matrix and model terms.',
+  aopt:'Requires candidate design matrix and model terms.',
+  gopt:'Requires candidate design matrix and model terms.'
+ };
+ alert(title+'\n\n'+(notes[id]||'This DOE method requires a design-specific input structure. The current numeric observation table is not enough to identify all required factors/levels safely. The method is included in the master DOE library and will be available when its required design inputs are supplied.'));
+}
