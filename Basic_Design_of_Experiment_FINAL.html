@@ -430,6 +430,60 @@ const tests={
   {id:'sequential',name:'Sequential Experiment Design',desc:'Update the design using results from earlier runs.',solver:null}
  ]
 };
+const applicationMap={
+ anova:"Used when several independent treatments/groups are compared under a completely randomized experiment; e.g., comparing fertilizers, varieties, teaching methods or production processes.",
+ effect:"Used to quantify the overall mean and how far each treatment mean is above or below the grand mean.",
+ lsd:"Used after a significant one-way ANOVA to identify which pairs of treatment means differ.",
+ tukey:"Used after ANOVA when all pairwise treatment comparisons are required while controlling the family-wise error rate.",
+ dmrt:"Used after a significant ANOVA to rank and group treatment means into homogeneous subsets.",
+ scheffe:"Used for flexible post-ANOVA multiple comparisons and planned/unplanned contrasts, especially when many contrasts may be examined.",
+ bonferroni:"Used when several planned pairwise comparisons are made and the overall Type-I error rate needs adjustment.",
+ contrast:"Used to test a scientifically specified linear combination of treatment means, such as comparing two treatment groups or two sets of treatments.",
+ "rbd-anova":"Used when experimental units are grouped into blocks to remove known nuisance variation while comparing treatments.",
+ "rbd-effect":"Used to estimate treatment effects after controlling for block-to-block variability.",
+ "rbd-lsd":"Used after a significant RBD treatment test to compare treatment means using the RBD error variance.",
+ bibd:"Used when complete blocks are impractical and each incomplete block contains only a subset of treatments.",
+ "latin-anova":"Used when two blocking directions (rows and columns) must be controlled while comparing treatments.",
+ "latin-missing":"Used when one observation is missing from a Latin Square and the missing response must be estimated before ANOVA.",
+ "graeco-latin":"Used when two treatment factors need to be studied simultaneously while controlling row and column effects.",
+ "two-way":"Used to study two categorical factors and their effects on a quantitative response; with replication it also tests interaction.",
+ "factor-a":"Used to determine whether levels of the first factor produce different mean responses.",
+ "factor-b":"Used to determine whether levels of the second factor produce different mean responses.",
+ interaction:"Used to determine whether the effect of one factor changes across levels of the other factor.",
+ "2k":"Used for two-level factorial experiments to estimate main effects and interactions efficiently.",
+ "3k":"Used when factors have three levels and nonlinear/curvature effects may be relevant.",
+ "mixed-factorial":"Used when different factors have different numbers of levels.",
+ fractional:"Used to screen many factors with fewer runs than a full factorial, accepting controlled aliasing.",
+ alias:"Used to identify which factorial effects are confounded/aliased in a fractional factorial design.",
+ resolution:"Used to judge how well a fractional factorial separates main effects and interactions.",
+ foldover:"Used to add runs that break important alias relationships in a fractional factorial design.",
+ plackett:"Used for economical screening of many factors when only main effects are of primary interest.",
+ splitplot:"Used when one factor is difficult/costly to randomize at the smallest experimental-unit level, creating whole-plot and subplot errors.",
+ stripplot:"Used when two factors are each assigned in strips and their intersection provides the response.",
+ nested:"Used when levels of one factor occur only within levels of another, such as machines nested within plants.",
+ restricted:"Used when full randomization is impossible and the correct error structure follows the restricted randomization.",
+ "first-order-rsm":"Used for process screening and optimization near a current operating region with a first-order response surface.",
+ "second-order-rsm":"Used to model curvature and locate/characterize a local optimum using a quadratic response surface.",
+ ccd:"Used to fit second-order response surfaces efficiently using factorial, axial and center runs.",
+ bbd:"Used to fit quadratic response surfaces without requiring factorial corner points.",
+ lof:"Used to check whether the fitted response model adequately represents the data beyond pure experimental error.",
+ steepest:"Used to move experimentally toward a region of improved response when the current first-order model indicates a direction of improvement.",
+ optimize:"Used to select operating conditions that maximize/minimize a response or satisfy multiple response goals.",
+ mixture:"Used when response depends on component proportions that must sum to a fixed total.",
+ "simplex-lattice":"Used to systematically explore mixture proportions and estimate polynomial mixture models.",
+ "simplex-centroid":"Used to study pure components, binary blends, ternary blends and higher-order mixture combinations.",
+ "extreme-vertices":"Used when mixture components have lower/upper constraints that restrict the feasible composition region.",
+ taguchi:"Used to reduce experimental runs while studying robust performance through orthogonal arrays.",
+ "sn-small":"Used when a smaller response is better, such as defects, noise or processing loss.",
+ "sn-large":"Used when a larger response is better, such as strength, yield or efficiency.",
+ "sn-nominal":"Used when the response should stay close to a target value.",
+ robust:"Used to choose settings that make performance less sensitive to environmental/noise factors.",
+ "d-optimal":"Used when standard factorial designs do not fit constraints and the goal is precise estimation of model parameters.",
+ "a-optimal":"Used to minimize average variance of parameter estimates for a chosen model.",
+ "g-optimal":"Used to control the maximum prediction variance over the design region.",
+ custom:"Used to construct a design tailored to specified factors, constraints, model terms and run budget.",
+ sequential:"Used when the next experiment should be selected using information learned from previous runs."
+};
 const categoryMeta={
  'single-factor':'Single-Factor / CRD / One-Way Designs',
  blocking:'Blocking Designs',
@@ -451,30 +505,108 @@ function openCategory(id){
 function renderTests(id){
  const arr=tests[id]||[];
  document.getElementById('testList').innerHTML=arr.map(t=>{
-   const ready=t.solver!==null;
-   return `<div class="choice"><div><h3>${t.name}</h3><p>${t.desc}</p><span class="pill">${ready?'Calculator available':'Design/analysis specification'}</span></div><button onclick="runTestById('${t.id}')">${ready?'Solve →':'Open →'}</button></div>`;
+   const ready=t.solver!==null || ['scheffe','bonferroni','contrast','rbd-lsd'].includes(t.id);
+   const app=applicationMap[t.id]||'Used to analyze experimental data according to the selected DOE structure.';
+   return `<div class="choice"><div><h3>${t.name}</h3><p>${t.desc}</p><div class="section-note"><b>Application:</b> ${app}</div><span class="pill">${ready?'Calculator available':'Design-specific calculator'}</span></div><button onclick="runTestById('${t.id}')">${ready?'Solve →':'Open →'}</button></div>`;
  }).join('');
 }
+
+function oneWayStats(m){
+ const groups=m.filter(g=>g.some(x=>x!==null)).map(g=>g.filter(x=>x!==null));
+ if(groups.length<2) throw new Error("At least two treatment groups are required.");
+ const ns=groups.map(g=>g.length),N=ns.reduce((a,b)=>a+b,0),tot=groups.map(sum),means=groups.map(mean),G=sum(tot);
+ const SST=groups.flat().reduce((a,x)=>a+x*x,0)-G*G/N;
+ const SStr=tot.reduce((a,x)=>a+x*x/((tot.length?ns[tot.indexOf(x)]:1)),0)-G*G/N;
+ // safer treatment SS
+ const SStr2=tot.reduce((a,x,i)=>a+x*x/ns[i],0)-G*G/N;
+ const SSE=SST-SStr2,df1=groups.length-1,df2=N-groups.length,MSE=SSE/df2,F=(SStr2/df1)/MSE;
+ return {groups,ns,tot,means,G,N,SST,SStr:SStr2,SSE,df1,df2,MSE,F,p:fP(F,df1,df2)};
+}
+function pairwisePosthoc(m,kind){
+ const a=oneWayStats(m),k=a.groups.length,df=a.df2,alpha=.05;
+ let critFn;
+ if(kind==='scheffe') critFn=()=>Math.sqrt((k-1)*fCrit(k-1,df,alpha)*a.MSE);
+ const rows=[];
+ for(let i=0;i<k;i++)for(let j=i+1;j<k;j++){
+   const diff=Math.abs(a.means[i]-a.means[j]),se=Math.sqrt(a.MSE*(1/a.ns[i]+1/a.ns[j]));
+   let critical,p;
+   if(kind==='scheffe'){
+     // Scheffe critical difference for pairwise contrast.
+     critical=Math.sqrt((k-1)*fCrit(k-1,df,alpha)*a.MSE*(1/a.ns[i]+1/a.ns[j]));
+     p=null;
+   }else{
+     const comparisons=k*(k-1)/2;
+     const tcrit=tCrit(df,alpha/comparisons);
+     critical=tcrit*se;
+     p=2*(1-tCdf(diff/se,df));
+   }
+   rows.push({i,j,diff,critical,p,sig:diff>critical});
+ }
+ let title=kind==='scheffe'?"Scheffé Multiple Comparison":"Bonferroni Pairwise Comparison";
+ let formula=kind==='scheffe'
+ ? "Scheffé: CD = √[(k−1)F<sub>α;k−1,dfE</sub> MSE (1/nᵢ + 1/nⱼ)]"
+ : "Bonferroni: CD = t<sub>1−α/(2m),dfE</sub> √[MSE(1/nᵢ + 1/nⱼ)], where m = number of pairwise comparisons.";
+ let body=rows.map(x=>`<tr><td>Treatment ${x.i+1} vs ${x.j+1}</td><td>${fmt(a.means[x.i])}</td><td>${fmt(a.means[x.j])}</td><td>${fmt(x.diff)}</td><td>${fmt(x.critical)}</td><td>${x.p===null?'—':fmt(x.p,5)}</td><td><b>${x.sig?'Significant':'Not Significant'}</b></td></tr>`).join('');
+ return `<h3>${title}</h3><div class="section-note"><b>Application:</b> ${applicationMap[kind]}</div>
+ <div class="formula">${formula}</div>
+ <table class="result-summary"><tr><th>Groups</th><td>${k}</td></tr><tr><th>Error df</th><td>${a.df2}</td></tr><tr><th>MSE</th><td>${fmt(a.MSE)}</td></tr><tr><th>ANOVA p-value</th><td>${fmt(a.p,5)}</td></tr></table>
+ <table class="calc-table"><tr><th>Pair</th><th>Mean 1</th><th>Mean 2</th><th>|Difference|</th><th>Critical Difference</th><th>p-value</th><th>Decision</th></tr>${body}</table>
+ <div class="comment-box"><b>Comment:</b> ${kind==='scheffe'?'Scheffé is a conservative post-ANOVA procedure and is especially useful when more than simple pairwise comparisons may be of interest. A pair is significant when its absolute mean difference exceeds the Scheffé critical difference.':'Bonferroni controls the family-wise error rate by adjusting the critical probability for the number of comparisons. It is appropriate when several planned pairwise comparisons are made.'}</div>
+ <div class="interpret-box"><b>Interpretation:</b> Each row compares two treatment means while using the pooled experimental error from the one-way ANOVA. “Significant” means the observed difference is large enough to exceed the adjusted critical difference at the 5% family-wise level.</div>`;
+}
+function rbdLSDAnswer(m){
+ const c=rbd(m), p=c.cols, df=c.dfe, mse=c.MSE, t=tCrit(df,.05);
+ const means=c.colT.map(x=>x/c.rows), rows=[];
+ for(let i=0;i<p;i++)for(let j=i+1;j<p;j++){
+   const d=Math.abs(means[i]-means[j]), lsd=t*Math.sqrt(2*mse/c.rows);
+   rows.push(`<tr><td>Treatment ${i+1} vs ${j+1}</td><td>${fmt(means[i])}</td><td>${fmt(means[j])}</td><td>${fmt(d)}</td><td>${fmt(lsd)}</td><td>${d>lsd?'Significant':'Not Significant'}</td></tr>`);
+ }
+ return `<h3>Fisher's LSD for RBD</h3><div class="section-note"><b>Application:</b> ${applicationMap['rbd-lsd']}</div>
+ <div class="formula">LSD = t<sub>α/2,dfE</sub> √(2MSE/r), where r is the number of blocks.</div>
+ <table class="result-summary"><tr><th>Error df</th><td>${df}</td></tr><tr><th>Error MS</th><td>${fmt(mse)}</td></tr><tr><th>t critical (5%)</th><td>${fmt(t)}</td></tr></table>
+ <table class="calc-table"><tr><th>Pair</th><th>Mean 1</th><th>Mean 2</th><th>|Difference|</th><th>LSD</th><th>Decision</th></tr>${rows.join('')}</table>
+ <div class="comment-box"><b>Comment:</b> The comparison uses the common RBD error variance, so block-to-block variation has already been removed from the treatment comparison.</div>
+ <div class="interpret-box"><b>Interpretation:</b> A pair is declared significantly different at 5% when its absolute mean difference is greater than the calculated LSD.</div>`;
+}
+function contrastAnswer(m){
+ const a=oneWayStats(m);
+ let coeff=a.groups.map((_,i)=>i===0?1:(i===1?-1:0));
+ return `<h3>Planned / Orthogonal Contrast — Pairwise Contrast Mode</h3>
+ <div class="section-note"><b>Application:</b> ${applicationMap.contrast}<br>This calculator uses the first two treatment groups as the default contrast (+1, −1, 0, …). For a custom orthogonal contrast, the coefficient vector must be supplied explicitly.</div>
+ <div class="formula">L = Σcᵢ μᵢ; SE(L) = √[MSE Σ(cᵢ²/nᵢ)]; t = L/SE(L)</div>
+ <table class="calc-table"><tr><th>Treatment</th><th>Coefficient cᵢ</th><th>Mean</th><th>cᵢ × Mean</th></tr>
+ ${a.means.map((v,i)=>`<tr><td>${i+1}</td><td>${coeff[i]}</td><td>${fmt(v)}</td><td>${fmt(coeff[i]*v)}</td></tr>`).join('')}</table>
+ <table class="result-summary"><tr><th>Contrast estimate L</th><td>${fmt(a.means[0]-a.means[1])}</td></tr><tr><th>SE(L)</th><td>${fmt(Math.sqrt(a.MSE*(1/a.ns[0]+1/a.ns[1])))}</td></tr></table>
+ <div class="comment-box"><b>Comment:</b> The default contrast compares treatment 1 with treatment 2. The coefficient sum is zero, so it is a valid difference-type contrast.</div>
+ <div class="interpret-box"><b>Interpretation:</b> A positive contrast means treatment 1 has a larger estimated mean than treatment 2; a negative value means the reverse. Statistical significance should be judged using the contrast t statistic and its error degrees of freedom.</div>`;
+}
+
 function runTestById(id){
  const arr=tests[doeState.category]||[];const t=arr.find(x=>x.id===id);if(!t)return;
- if(t.solver===null){
-   document.getElementById('resultTitle').textContent=t.name;
-   document.getElementById('out').innerHTML=`<div class="section-note"><b>DOE Master Scope</b><br>${t.desc}</div>
-   <table class="result-summary"><tr><th>Category</th><td>${categoryMeta[doeState.category]||doeState.category}</td></tr>
-   <tr><th>Method</th><td>${t.name}</td></tr>
-   <tr><th>Status</th><td>Design/analysis specification is included in the master scope.</td></tr>
-   <tr><th>Required input</th><td>Design type, factor levels, treatment/block labels and response observations as applicable.</td></tr>
-   <tr><th>Output</th><td>Design matrix/model, effect estimates, ANOVA or model diagnostics, decision and interpretation as appropriate.</td></tr></table>
-   <div class="comment-box"><b>Comment:</b> This method is part of the Complete DOE Master Scope. The current page records its correct analytical role and input requirements rather than producing an unsupported numerical answer from an ambiguous matrix.</div>
-   <div class="interpret-box"><b>Interpretation:</b> A valid numerical result requires the experimental design information specific to this method. Once those design inputs are supplied, the method can be evaluated without confusing it with a different DOE design.</div>`;
-   showPage('result'); return;
- }
- runTest(id,t.solver,t.name);
+ syncHidden();
+ document.getElementById('resultTitle').textContent=t.name;
+ try{
+   if(id==='scheffe'){document.getElementById('out').innerHTML=pairwisePosthoc(nums(document.getElementById('input').value),'scheffe');showPage('result');return;}
+   if(id==='bonferroni'){document.getElementById('out').innerHTML=pairwisePosthoc(nums(document.getElementById('input').value),'bonferroni');showPage('result');return;}
+   if(id==='rbd-lsd'){document.getElementById('out').innerHTML=rbdLSDAnswer(nums(document.getElementById('input').value));showPage('result');return;}
+   if(id==='contrast'){document.getElementById('out').innerHTML=contrastAnswer(nums(document.getElementById('input').value));showPage('result');return;}
+   if(t.solver===null){
+     document.getElementById('out').innerHTML=`<div class="section-note"><b>Application:</b> ${applicationMap[id]||t.desc}</div>
+     <table class="result-summary"><tr><th>Category</th><td>${categoryMeta[doeState.category]||doeState.category}</td></tr>
+     <tr><th>Method</th><td>${t.name}</td></tr>
+     <tr><th>Required input</th><td>Design-specific factor levels, treatment/block labels, response observations and, where applicable, randomization/model information.</td></tr>
+     <tr><th>Expected output</th><td>Design matrix/model, effect estimates, ANOVA or model diagnostics, decision, comment and interpretation.</td></tr></table>
+     <div class="comment-box"><b>Comment:</b> ${t.name} is included in the DOE Master Scope. Its application is shown above. A valid numerical calculation requires design information that cannot be uniquely inferred from an anonymous rectangular response matrix, so the system does not invent a numerical answer.</div>
+     <div class="interpret-box"><b>Interpretation:</b> This method should be selected when the experimental structure described in the application matches the study. Once the required design-specific inputs are available, the corresponding model and decision can be computed.</div>`;
+     showPage('result');return;
+   }
+   runTest(id,t.solver,t.name);
+ }catch(e){document.getElementById('out').innerHTML=`<div class="result bad"><b>Data error:</b> ${e.message}</div>`;showPage('result');}
 }
 function runTest(id,solver,title){
  syncHidden();document.getElementById('resultTitle').textContent=title;let out='';
  try{selected=solver;if(solver===1)out=q1();if(solver===2)out=q2();if(solver===3)out=q3();if(solver===4)out=q4();if(solver===5)out=q5();if(solver===6)out=q6();if(solver===7)out=q7();if(solver===8)out=q8();if(solver===9)out=q9();
-  document.getElementById('out').innerHTML=out;showPage('result');
+  document.getElementById('out').innerHTML=`<div class="section-note"><b>Application:</b> ${applicationMap[id]||'Used to analyze the selected experimental design.'}</div>`+out;showPage('result');
  }catch(e){document.getElementById('out').innerHTML=`<div class="result bad"><b>Data error:</b> ${e.message}</div>`;showPage('result');}
 }
 function showPage(name){['data','categories','tests','result'].forEach(x=>document.getElementById('page-'+x).classList.toggle('hidden',x!==name));window.scrollTo({top:0,behavior:'smooth'});}
