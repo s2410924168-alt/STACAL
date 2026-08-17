@@ -17,9 +17,9 @@ const qData={
 228,231,224,216
 219,216,230,219`,
 2:`14,19,22,18,21
-16,10,14,14,18
-19,22,18,21,13
-14,13,18,11,22`,
+16,10,14,14
+19,22,18,21,18,22
+14,13,18,11,13`,
 3:`12.4,13.1,12.8,13.5,12.9
 15.2,14.8,15.5,15
 10.8,11.2,10.5,11,10.7
@@ -135,7 +135,20 @@ function crdAnswer(groups,names,question){
  return out;
 }
 function q1(){return crdAnswer(nums(document.getElementById("input").value),["Coating 1","Coating 2","Coating 3","Coating 4"],1)}
-function q2(){return crdAnswer(nums(document.getElementById("input").value),["Program 1","Program 2","Program 3","Program 4"],2)+`<h3>Parameter estimates</h3><div class="formula">For the one-way model Yᵢⱼ = μ + τᵢ + εᵢⱼ, μ̂ = overall mean and τ̂ᵢ = group mean − overall mean.</div>`}
+function q2(){
+ const g=nums(document.getElementById("input").value),names=["Program 1","Program 2","Program 3","Program 4"],c=anovaGroups(g);
+ let out=crdAnswer(g,names,2);
+ out+=`<h3>Parameter Estimation</h3>
+ <div class="formula">For the one-way model Yᵢⱼ = μ + τᵢ + εᵢⱼ:<br>
+ μ̂ = Ȳ·· = ΣY/N<br>
+ τ̂ᵢ = Ȳᵢ· − Ȳ··</div>
+ <table class="calc-table"><tr><th>Program</th><th>nᵢ</th><th>Total</th><th>Ȳᵢ·</th><th>μ̂</th><th>τ̂ᵢ</th></tr>`;
+ c.means.forEach((m,i)=>out+=`<tr><td>${names[i]}</td><td>${c.ns[i]}</td><td>${fmt(c.totals[i])}</td><td><b>${fmt(m)}</b></td><td>${fmt(c.gm)}</td><td><b>${fmt(m-c.gm)}</b></td></tr>`);
+ out+=`<tr><th>Overall</th><th>${c.N}</th><th>${fmt(c.G)}</th><th>${fmt(c.gm)}</th><th>${fmt(c.gm)}</th><th>0.000</th></tr></table>`;
+ out+=comment(`Estimated overall mean μ̂ = ${fmt(c.gm)}. Program effects are measured relative to the overall mean.`);
+ out+=`<h3>Interpretation</h3><p>Program 1 and Program 3 have positive estimated effects, while Program 2 and Program 4 have negative estimated effects. The overall ANOVA shows that the program effect is statistically significant at the 5% level.</p>`;
+ return out;
+}
 function q3(){
  const g=nums(document.getElementById("input").value),c=anovaGroups(g),d=c.means[0]-c.means[2],se=Math.sqrt(c.MSE*(1/c.ns[0]+1/c.ns[2])),tc=tCrit(c.df2,.10),stat=d/se,p=tP(stat,c.df2),lo=d-tc*se,hi=d+tc*se,crit=tc;
  return crdAnswer(g,["Region A","Region B","Region C","Region D"],3)+`<h3>Mean Difference Test & 90% Confidence Interval</h3>

@@ -17,7 +17,7 @@ function buildTable(matrix){
  for(let i=0;i<r;i++){h+='<tr><th>Row '+(i+1)+'</th>';for(let j=0;j<c;j++){let v=(old[i]&&old[i][j]!=null)?old[i][j]:'';h+=`<td><input id="cell-${i}-${j}" value="${String(v).replace(/"/g,'&quot;')}" aria-label="Row ${i+1} Column ${j+1}"></td>`}h+='</tr>'}
  document.getElementById('inputGrid').innerHTML=h;
 }
-function readTable(){const r=Number(document.getElementById('rowCount').value),c=Number(document.getElementById('colCount').value);let g=[];for(let i=0;i<r;i++){let row=[];for(let j=0;j<c;j++){let v=document.getElementById(`cell-${i}-${j}`).value.trim();row.push(v==='?'?null:Number(v))}g.push(row)}return g}
+function readTable(){const r=Number(document.getElementById('rowCount').value),c=Number(document.getElementById('colCount').value);let g=[];for(let i=0;i<r;i++){let row=[];for(let j=0;j<c;j++){let v=document.getElementById(`cell-${i}-${j}`).value.trim();row.push((v===''||v==='?')?null:Number(v))}g.push(row)}return g}
 function matrixToText(g){return g.map(row=>row.map(v=>v==null?'?':v).join(', ')).join('\n')}
 function restoreSaved(){const raw=sessionStorage.getItem('DOE_DATA');if(raw){const g=raw.trim().split(/\n+/).filter(Boolean).map(r=>r.trim().split(/[,;\t ]+/).map(x=>x==='?'?null:Number(x)));if(g.length){document.getElementById('rowCount').value=String(g.length);document.getElementById('colCount').value=String(Math.max(...g.map(x=>x.length)));savedMatrix=g;buildTable(g);return;}}buildTable();}
 function parseDOE(t){return t.trim().split(/\n+/).filter(Boolean).map(r=>r.trim().split(/[,;\t ]+/).map(x=>x==='?'?null:Number(x)).filter(x=>x===null||Number.isFinite(x)))}
