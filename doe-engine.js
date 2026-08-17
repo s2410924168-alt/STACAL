@@ -104,6 +104,12 @@ function anovaGroups(groups){
  const SSE=SST-SStr,df1=groups.length-1,df2=N-groups.length,MS1=SStr/df1,MSE=SSE/df2,F=MS1/MSE;
  return {ns,N,totals,means,G,gm,SST,SStr,SSE,df1,df2,MS1,MSE,F,p:fP(F,df1,df2),fc:fCrit(df1,df2,.05)};
 }
+function crdColumns(matrix){
+ const cols=matrix[0]?.length||0;
+ const groups=Array.from({length:cols},(_,j)=>matrix.map(r=>r[j]).filter(x=>x!=null));
+ if(groups.some(g=>g.length===0)) throw new Error("Each treatment column must contain at least one observation.");
+ return groups;
+}
 function summary(c,names=[]){let s="<table><tr><th>Group</th><th>n</th><th>Total</th><th>Mean</th></tr>";c.means.forEach((m,i)=>s+=`<tr><td>${names[i]||"Treatment "+(i+1)}</td><td>${c.ns[i]}</td><td>${fmt(c.totals[i])}</td><td>${fmt(m)}</td></tr>`);return s+`<tr><th>Overall</th><th>${c.N}</th><th>${fmt(c.G)}</th><th>${fmt(c.gm)}</th></tr></table>`}
 function anovaTable(c,rowLabel="Treatment"){
  const reject=c.F>c.fc;
@@ -134,9 +140,25 @@ function crdAnswer(groups,names,question){
  }
  return out;
 }
-function q1(){return crdAnswer(nums(document.getElementById("input").value),["Coating 1","Coating 2","Coating 3","Coating 4"],1)}
+function q1anova(){
+ const matrix=nums(document.getElementById("input").value,true),g=crdColumns(matrix),names=g.map((_,i)=>"Treatment "+(i+1)),c=anovaGroups(g),reject=c.p<.05;
+ return `<h3>One-Way ANOVA / CRD</h3><div class="formula">H₀: all treatment means are equal. H₁: at least one treatment mean differs.</div>${summary(c,names)}${anovaTable(c)}${interpretation(reject,reject?"The treatment means differ significantly; the factor has a significant effect on the response.":"There is insufficient evidence that the treatment means differ significantly at the 5% level.")}`;
+}
+function q1(){
+ const matrix=nums(document.getElementById("input").value,true),g=crdColumns(matrix),names=g.map((_,i)=>"Treatment "+(i+1)),c=anovaGroups(g),tc=tCrit(c.df2,.05);
+ let out=`<h3>Overall Mean & Treatment Effects</h3><div class="formula">μ̂ = Ȳ·· = ΣY/N<br>τ̂ᵢ = Ȳᵢ· − Ȳ··</div><table class="calc-table"><tr><th>Treatment</th><th>n</th><th>Total</th><th>Mean</th><th>Overall Mean</th><th>Treatment Effect</th></tr>`;
+ c.means.forEach((m,i)=>out+=`<tr><td>${names[i]}</td><td>${c.ns[i]}</td><td>${fmt(c.totals[i])}</td><td><b>${fmt(m)}</b></td><td>${fmt(c.gm)}</td><td><b>${fmt(m-c.gm)}</b></td></tr>`);
+ out+=`<tr><th>Overall</th><th>${c.N}</th><th>${fmt(c.G)}</th><th>${fmt(c.gm)}</th><th>${fmt(c.gm)}</th><th>0.000</th></tr></table>`;
+ out+=`<h3>Fisher's LSD Pairwise Comparison</h3><div class="formula">LSDᵢⱼ = t<sub>α/2,error df</sub> √[MSE(1/nᵢ + 1/nⱼ)]</div><table class="calc-table"><tr><th>Pair</th><th>Mean i</th><th>Mean j</th><th>|Difference|</th><th>SE</th><th>t-cal</th><th>t-tab</th><th>LSD</th><th>Decision</th></tr>`;
+ for(let i=0;i<g.length;i++)for(let j=i+1;j<g.length;j++){
+  let d=Math.abs(c.means[i]-c.means[j]),se=Math.sqrt(c.MSE*(1/c.ns[i]+1/c.ns[j])),t=d/se,l=tc*se;
+  out+=`<tr><td>${names[i]} vs ${names[j]}</td><td>${fmt(c.means[i])}</td><td>${fmt(c.means[j])}</td><td><b>${fmt(d)}</b></td><td>${fmt(se)}</td><td>${fmt(t)}</td><td>${fmt(tc)}</td><td><b>${fmt(l)}</b></td><td><b>${d>l?"Significant":"Not Significant"}</b></td></tr>`;
+ }
+ out+=`</table>${comment("The treatment effect is the difference between each treatment mean and the overall mean. Fisher's LSD identifies which treatment pairs differ significantly.")}<h3>Interpretation</h3><p>The overall mean and treatment-effect estimates are shown above, followed by Fisher's LSD pairwise comparisons.</p>`;
+ return out;
+}
 function q2(){
- const g=nums(document.getElementById("input").value),names=["Program 1","Program 2","Program 3","Program 4"],c=anovaGroups(g);
+ const matrix=nums(document.getElementById("input").value,true),g=crdColumns(matrix),names=g.map((_,i)=>"Program "+(i+1)),c=anovaGroups(g);
  let out=crdAnswer(g,names,2);
  out+=`<h3>Parameter Estimation</h3>
  <div class="formula">For the one-way model Yᵢⱼ = μ + τᵢ + εᵢⱼ:<br>
@@ -150,7 +172,7 @@ function q2(){
  return out;
 }
 function q3(){
- const g=nums(document.getElementById("input").value),c=anovaGroups(g),d=c.means[0]-c.means[2],se=Math.sqrt(c.MSE*(1/c.ns[0]+1/c.ns[2])),tc=tCrit(c.df2,.10),stat=d/se,p=tP(stat,c.df2),lo=d-tc*se,hi=d+tc*se,crit=tc;
+ const matrix=nums(document.getElementById("input").value,true),g=crdColumns(matrix),c=anovaGroups(g),d=c.means[0]-c.means[2],se=Math.sqrt(c.MSE*(1/c.ns[0]+1/c.ns[2])),tc=tCrit(c.df2,.10),stat=d/se,p=tP(stat,c.df2),lo=d-tc*se,hi=d+tc*se,crit=tc;
  return crdAnswer(g,["Region A","Region B","Region C","Region D"],3)+`<h3>Mean Difference Test & 90% Confidence Interval</h3>
  <div class="formula">H₀: μA−μC=0; H₁: μA−μC&gt;0<br>t = (ȲA−ȲC)/SE</div>
  <table class="calc-table"><tr><th>Comparison</th><th>Mean A</th><th>Mean C</th><th>Difference</th><th>SE</th><th>t-cal</th><th>t-tab (10%)</th><th>p-value</th><th>90% CI</th><th>Decision</th></tr>
@@ -252,9 +274,9 @@ function q9(){return latinAnswer(nums(document.getElementById("input").value),fa
 function solveSelected(){
  const el=document.getElementById("out");let out="";
  try{
-  if(selected===1)out=q1();if(selected===2)out=q2();if(selected===3)out=q3();if(selected===4)out=q4();if(selected===5)out=q5();if(selected===6)out=q6();if(selected===7)out=q7();if(selected===8)out=q8();if(selected===9)out=q9();
+  if(selected===101)out=q1anova();if(selected===1)out=q1();if(selected===2)out=q2();if(selected===3)out=q3();if(selected===4)out=q4();if(selected===5)out=q5();if(selected===6)out=q6();if(selected===7)out=q7();if(selected===8)out=q8();if(selected===9)out=q9();
   document.getElementById("result").classList.remove("hidden");el.innerHTML=out;document.getElementById("result").scrollIntoView({behavior:"smooth"});
  }catch(e){el.innerHTML=`<div class="result bad"><b>Data error:</b> ${e.message}</div>`;document.getElementById("result").classList.remove("hidden")}
 }
-function q4(){return crdAnswer(nums(document.getElementById("input").value),["15%","20%","25%","30%","35%"],4)}
+function q4(){const g=crdColumns(nums(document.getElementById("input").value,true));return crdAnswer(g,g.map((_,i)=>(15+i*5)+"%"),4)}
 tabs();renderForm();

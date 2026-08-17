@@ -4,33 +4,82 @@
 <nav class="menu" aria-label="Main menu"><a href="index.html">🏠 Home</a><a href="tools.html">📊 Statistical Tools</a><a href="distributions.html">🎲 Distributions</a><a href="statistical-tables.html">📚 Statistical Tables</a><a href="formulas.html">∑ Formulas</a><a href="about.html">ⓘ About</a></nav>
 <main class="page"><div class="container doe-box"><div class="page-title"><div class="tag">STATISTICAL TOOLS</div><h1>Basic Design of Experiment</h1><p>Enter data first. The system detects the design and shows only the applicable tests.</p></div>
 <div class="doe-card"><h2>1. Data Input</h2><p>Enter observations directly in the table. Choose the number of rows and columns. For a missing observation, enter <b>?</b>.</p>
-<div class="doe-controls"><label>Rows<select id="rowCount" onchange="buildTable()"><option>3</option><option>4</option><option>5</option><option>6</option></select></label><label>Columns<select id="colCount" onchange="buildTable()"><option>4</option><option selected>5</option><option>6</option></select></label></div>
+<div class="doe-controls"><label>Rows<input id="rowCount" type="number" min="1" step="1" value="6" onchange="buildTable()" oninput="normalizeDimension(this)"></label><label>Columns<input id="colCount" type="number" min="1" step="1" value="6" onchange="buildTable()" oninput="normalizeDimension(this)"></label></div>
 <div class="table-scroll"><table class="input-table"><tbody id="inputGrid"></tbody></table></div>
 <div><button class="doe-btn" onclick="detectDOE()">Check Data & Show Available Tests</button><button class="doe-btn" style="background:#66758a" onclick="loadDemo()">Load Example</button><button class="doe-btn" style="background:#8b5a3c" onclick="clearTable()">Clear Data</button></div><div id="detectMsg"></div></div>
 <div id="available" class="doe-card doe-hidden"><h2>2. Available Tests</h2><p>Select a test. Its <b>answer, formula, calculation, comment and interpretation</b> will open on a separate result page.</p><div id="testList"></div></div>
 </div></main><footer class="footer"><span>Statistical Hub</span><span>Basic Design of Experiment</span></footer>
 <script src="script.js"></script><script>
 let savedMatrix=[];
+function normalizeDimension(el){
+ const v=parseInt(el.value,10); if(!Number.isFinite(v)||v<1) el.value=1;
+}
 function buildTable(matrix){
- const r=Number(document.getElementById('rowCount').value),c=Number(document.getElementById('colCount').value),old=matrix||savedMatrix||[];
+ const r=Math.max(1,Number(document.getElementById('rowCount').value)||1),c=Math.max(1,Number(document.getElementById('colCount').value)||1),old=matrix||savedMatrix||[];
  let h='<tr><th></th>'+Array.from({length:c},(_,j)=>'<th>Column '+(j+1)+'</th>').join('')+'</tr>';
- for(let i=0;i<r;i++){h+='<tr><th>Row '+(i+1)+'</th>';for(let j=0;j<c;j++){let v=(old[i]&&old[i][j]!=null)?old[i][j]:'';h+=`<td><input id="cell-${i}-${j}" value="${String(v).replace(/"/g,'&quot;')}" aria-label="Row ${i+1} Column ${j+1}"></td>`}h+='</tr>'}
+ for(let i=0;i<r;i++){
+   h+='<tr><th>Row '+(i+1)+'</th>';
+   for(let j=0;j<c;j++){
+     let v=(old[i]&&old[i][j]!=null)?old[i][j]:'';
+     h+=`<td><input id="cell-${i}-${j}" value="${String(v).replace(/"/g,'&quot;')}" aria-label="Row ${i+1} Column ${j+1}" data-r="${i}" data-c="${j}"></td>`
+   }
+   h+='</tr>';
+ }
  document.getElementById('inputGrid').innerHTML=h;
+ document.querySelectorAll('#inputGrid input').forEach(inp=>{
+   inp.addEventListener('keydown',e=>{
+     if(e.key==='Enter'){
+       e.preventDefault();
+       const r=Number(inp.dataset.r),c=Number(inp.dataset.c),next=document.getElementById(`cell-${r}-${c+1}`)||document.getElementById(`cell-${r+1}-0`);
+       if(next){next.focus();next.select();}
+     }
+   });
+ });
 }
 function readTable(){const r=Number(document.getElementById('rowCount').value),c=Number(document.getElementById('colCount').value);let g=[];for(let i=0;i<r;i++){let row=[];for(let j=0;j<c;j++){let v=document.getElementById(`cell-${i}-${j}`).value.trim();row.push((v===''||v==='?')?null:Number(v))}g.push(row)}return g}
 function matrixToText(g){return g.map(row=>row.map(v=>v==null?'?':v).join(', ')).join('\n')}
 function restoreSaved(){const raw=sessionStorage.getItem('DOE_DATA');if(raw){const g=raw.trim().split(/\n+/).filter(Boolean).map(r=>r.trim().split(/[,;\t ]+/).map(x=>x==='?'?null:Number(x)));if(g.length){document.getElementById('rowCount').value=String(g.length);document.getElementById('colCount').value=String(Math.max(...g.map(x=>x.length)));savedMatrix=g;buildTable(g);return;}}buildTable();}
-function parseDOE(t){return t.trim().split(/\n+/).filter(Boolean).map(r=>r.trim().split(/[,;\t ]+/).map(x=>x==='?'?null:Number(x)).filter(x=>x===null||Number.isFinite(x)))}
 function saveAndOpen(test){const g=readTable();const text=matrixToText(g);sessionStorage.setItem('DOE_DATA',text);sessionStorage.setItem('DOE_TEST',test);location.href='Basic_Design_of_Experiment_RESULT.html';}
-function addTest(id,title){return `<div class="doe-test"><div><h4>${title}</h4></div><button class="doe-btn" onclick="saveAndOpen('${id}')">Solve →</button></div>`}
-function detectDOE(){const g=readTable();if(g.length<2||g.some(r=>r.some(x=>x!==null&&!Number.isFinite(x)))){document.getElementById('detectMsg').innerHTML='<div class="doe-note">Please enter valid numeric observations. Use ? only for a missing observation.</div>';return}if(g.some(r=>r.every(x=>x===null))){document.getElementById('detectMsg').innerHTML='<div class="doe-note">Please do not leave a complete row empty.</div>';return}savedMatrix=g;sessionStorage.setItem('DOE_DATA',matrixToText(g));const rows=g.length,cols=g[0].length,missing=g.flat().filter(x=>x===null).length,same=g.every(r=>r.length===cols);let html='',design='';
-if(same&&rows===5&&cols===4){design='Two-Way ANOVA';html+=addTest('q5','Two-Way ANOVA')}
-else if(same&&rows===3&&cols===5){design='Randomized Block Design';html+=addTest('q6','RBD ANOVA')}
-else if(same&&rows===4&&cols===6&&missing>0){design='Randomized Block Design with Missing Observation';html+=addTest('q7','RBD + Missing Value')}
-else if(rows===5&&cols===5&&missing>0){design='Latin Square Design with Missing Observation';html+=addTest('q8','Latin Square + Missing Value')}
-else if(rows===5&&cols===5&&missing===0){design='Latin Square Design';html+=addTest('q9','Latin Square ANOVA')}
-else if(rows>=2){design='Completely Randomized Design / One-Way ANOVA';html+=addTest('q1','Test Treatment Effect');html+=addTest('q1b','Overall Mean & Treatment Effects');html+=addTest('q1c',"Fisher's LSD Pairwise Comparison");html+=addTest('q2','Unequal-Observation One-Way ANOVA');html+=addTest('q3','Mean Difference & 90% Confidence Interval');html+=addTest('q4','CRD + Fisher LSD + DMRT')}
-document.getElementById('detectMsg').innerHTML=`<div style="margin-top:12px"><span class="doe-pill">Detected: ${design}</span><span class="doe-pill">Rows: ${rows}</span><span class="doe-pill">Columns: ${cols}</span><span class="doe-pill">Missing: ${missing}</span></div>`;document.getElementById('testList').innerHTML=html||'<div class="doe-note">No supported design was detected from this data shape.</div>';document.getElementById('available').classList.remove('doe-hidden');}
+function addTest(id,title,desc=''){return `<div class="doe-test"><div><h4>${title}</h4>${desc?`<small>${desc}</small>`:''}</div><button class="doe-btn" onclick="saveAndOpen('${id}')">Solve →</button></div>`}
+function columnGroups(g){
+ const c=g[0]?.length||0; return Array.from({length:c},(_,j)=>g.map(r=>r[j]).filter(x=>x!=null));
+}
+function detectDOE(){
+ const g=readTable();
+ if(g.length<2||g[0].length<2||g.some(r=>r.some(x=>x!==null&&!Number.isFinite(x)))){document.getElementById('detectMsg').innerHTML='<div class="doe-note">Please enter valid numeric observations. Use ? or blank cells only for missing observations.</div>';return}
+ const rows=g.length,cols=g[0].length,counts=columnGroups(g).map(a=>a.length),missing=g.flat().filter(x=>x===null).length;
+ if(g.some(r=>r.length!==cols)){document.getElementById('detectMsg').innerHTML='<div class="doe-note">Please use a rectangular input table.</div>';return}
+ if(g.some(r=>r.every(x=>x===null))){document.getElementById('detectMsg').innerHTML='<div class="doe-note">Please do not leave a complete row empty.</div>';return}
+ savedMatrix=g;sessionStorage.setItem('DOE_DATA',matrixToText(g));
+ const equal=counts.every(n=>n===counts[0]),allFull=missing===0;
+ let html='',design='';
+ // Design-specific detection first. Fixed-shape designs are only offered when their structure is unambiguous.
+ if(rows===5&&cols===4&&allFull){design='Two-Way ANOVA';html+=addTest('q5','Two-Way ANOVA');}
+ else if(rows===3&&cols===5&&allFull){design='Randomized Block Design';html+=addTest('q6','Randomized Block Design ANOVA');}
+ else if(rows===4&&cols===6&&missing===1){design='Randomized Block Design with Missing Observation';html+=addTest('q7','RBD + Missing Value');}
+ else if(rows===5&&cols===5&&missing===1){design='Latin Square Design with Missing Observation';html+=addTest('q8','Latin Square + Missing Value');}
+ else if(rows===5&&cols===5&&allFull){
+   // A 5×5 complete table can represent either a CRD with five treatments or a Latin square.
+   // Show the two genuinely possible design-level tests instead of unrelated sub-tests.
+   design='5×5 Complete Design — CRD / Latin Square';
+   html+=addTest('q4','CRD + Fisher LSD + DMRT');
+   html+=addTest('q9','Latin Square ANOVA');
+ }
+ else if(cols>=2){
+   if(equal&&allFull){
+     design='Completely Randomized Design / One-Way ANOVA (equal observations)';
+     html+=addTest('q1anova','One-Way ANOVA');
+     html+=addTest('q1','Treatment Effect');
+   } else if(!equal){
+     design='Completely Randomized Design / One-Way ANOVA (unequal observations)';
+     html+=addTest('q2','Unequal-Observation One-Way ANOVA');
+   }
+ }
+ if(!html) design='No supported design was detected from this data shape.';
+ document.getElementById('detectMsg').innerHTML=`<div style="margin-top:12px"><span class="doe-pill">Detected: ${design}</span><span class="doe-pill">Rows: ${rows}</span><span class="doe-pill">Columns: ${cols}</span><span class="doe-pill">Missing: ${missing}</span></div>`;
+ document.getElementById('testList').innerHTML=html||'<div class="doe-note">No supported design was detected from this data shape.</div>';
+ document.getElementById('available').classList.remove('doe-hidden');
+}
 function loadDemo(){document.getElementById('rowCount').value='4';document.getElementById('colCount').value='4';const g=[[243,240,255,248],[258,253,233,243],[228,231,224,216],[219,216,230,219]];savedMatrix=g;buildTable(g);sessionStorage.removeItem('DOE_DATA');document.getElementById('detectMsg').innerHTML='';document.getElementById('available').classList.add('doe-hidden')}
 function clearTable(){savedMatrix=[];sessionStorage.removeItem('DOE_DATA');sessionStorage.removeItem('DOE_TEST');buildTable();document.getElementById('detectMsg').innerHTML='';document.getElementById('available').classList.add('doe-hidden')}
 restoreSaved();
