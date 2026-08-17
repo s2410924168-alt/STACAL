@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Basic Design of Experiment — Complete DOE Solver</title><style>
-*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:Arial,sans-serif}header{background:#173b6c;color:#fff;padding:24px 5%}header h1{margin:0 0 6px}header p{margin:0;opacity:.9}main{max-width:1200px;margin:24px auto;padding:0 16px}.card{background:#fff;border-radius:14px;padding:22px;margin:16px 0;box-shadow:0 3px 15px #0001}h2{color:#173b6c;margin-top:0}h3{color:#244b78}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}input,select{padding:9px;border:1px solid #ccd5e2;border-radius:8px;width:100%}button{background:#173b6c;color:#fff;border:0;border-radius:9px;padding:11px 16px;margin:7px 5px 0 0;cursor:pointer}button.alt{background:#68788d}button.clear{background:#98603f}button.back{background:#e9eff7;color:#173b6c}.toolbar{margin-top:8px}.hidden{display:none}.muted{color:#647184;font-size:14px}.notice{background:#fff8e8;border-left:5px solid #c08a20;padding:12px;border-radius:8px}.result{padding:13px;border-radius:9px;background:#f1f7ff;border-left:5px solid #173b6c;margin:12px 0}.ok{border-left-color:#25804b}.bad{border-left-color:#b33a3a}.formula{font-family:Georgia,serif;background:#fafafa;padding:11px;border-radius:8px;margin:8px 0}.pill{display:inline-block;background:#e7effa;color:#173b6c;border-radius:18px;padding:7px 10px;margin:3px}.choice{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#fff;border:1px solid #d6dde7;border-radius:12px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #0000000a}.choice h3{margin:0 0 5px}.choice p{margin:0;color:#647184}.choice button{white-space:nowrap;min-width:110px}.data-table{overflow:auto;margin-top:14px;border:1px solid #d6dde7;border-radius:10px}.data-table table{width:100%;border-collapse:collapse;margin:0}.data-table th,.data-table td{border:1px solid #d6dde7;padding:0;text-align:center;min-width:105px}.data-table th{background:#edf2f7;padding:10px}.data-table .rowhead{min-width:90px;padding:10px;background:#f6f8fb;font-weight:700}.cell-input{border:0!important;border-radius:0!important;padding:12px!important;text-align:center;width:100%;font:14px Arial}.cell-input:focus{outline:2px solid #4b78bd;outline-offset:-2px}.detect{margin-top:14px;padding:12px;background:#eef5ff;border-radius:10px;color:#173b6c}.page{min-height:300px}
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:Arial,sans-serif}header{background:#173b6c;color:#fff;padding:24px 5%}header h1{margin:0 0 6px}header p{margin:0;opacity:.9}main{max-width:1200px;margin:24px auto;padding:0 16px}.card{background:#fff;border-radius:14px;padding:22px;margin:16px 0;box-shadow:0 3px 15px #0001}h2{color:#173b6c;margin-top:0}h3{color:#244b78}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}input,select{padding:9px;border:1px solid #ccd5e2;border-radius:8px;width:100%}button{background:#173b6c;color:#fff;border:0;border-radius:9px;padding:11px 16px;margin:7px 5px 0 0;cursor:pointer}button.alt{background:#68788d}button.clear{background:#98603f}button.back{background:#e9eff7;color:#173b6c}.toolbar{margin-top:8px}.hidden{display:none}.muted{color:#647184;font-size:14px}.notice{background:#fff8e8;border-left:5px solid #c08a20;padding:12px;border-radius:8px}.result{padding:13px;border-radius:9px;background:#f1f7ff;border-left:5px solid #173b6c;margin:12px 0}.ok{border-left-color:#25804b}.bad{border-left-color:#b33a3a}.formula{font-family:Georgia,serif;background:#fafafa;padding:11px;border-radius:8px;margin:8px 0}.pill{display:inline-block;background:#e7effa;color:#173b6c;border-radius:18px;padding:7px 10px;margin:3px}.choice{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#fff;border:1px solid #d6dde7;border-radius:12px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #0000000a}.choice h3{margin:0 0 5px}.choice p{margin:0;color:#647184}.choice button{white-space:nowrap;min-width:110px}.data-table{overflow:auto;margin-top:14px;border:1px solid #d6dde7;border-radius:10px}.data-table table{width:100%;border-collapse:collapse;margin:0}.data-table th,.data-table td{border:1px solid #d6dde7;padding:0;text-align:center;min-width:105px}.data-table th{background:#edf2f7;padding:10px}.data-table .rowhead{min-width:90px;padding:10px;background:#f6f8fb;font-weight:700}.calc-table{width:100%;border-collapse:collapse;margin:12px 0 20px;background:#fff}.calc-table th,.calc-table td{border:1px solid #d6dde7;padding:10px 9px;text-align:center;vertical-align:middle}.calc-table th{background:#edf2f7;color:#173b6c;font-weight:700}.calc-table tr:nth-child(even) td{background:#fafcff}.calc-table td b{color:#173b6c}.section-note{background:#f7f9fc;border:1px solid #dce4ef;border-radius:10px;padding:14px;margin:10px 0 18px;line-height:1.6}.comment-box{background:#fff8e8;border-left:5px solid #c08a20;padding:15px;border-radius:8px;margin:14px 0;line-height:1.65}.interpret-box{background:#eef7ff;border-left:5px solid #2d6da3;padding:15px;border-radius:8px;margin:14px 0;line-height:1.65}.result-summary{width:100%;border-collapse:collapse;margin:10px 0 20px}.result-summary th,.result-summary td{border:1px solid #d6dde7;padding:11px;text-align:left}.result-summary th{width:34%;background:#edf2f7;color:#173b6c}.cell-input{border:0!important;border-radius:0!important;padding:12px!important;text-align:center;width:100%;font:14px Arial}.cell-input:focus{outline:2px solid #4b78bd;outline-offset:-2px}.detect{margin-top:14px;padding:12px;background:#eef5ff;border-radius:10px;color:#173b6c}.page{min-height:300px}
 </style></head><body><header><h1>Basic Design of Experiment</h1><p>Data-driven DOE analysis with category and test selection</p></header><main>
 <section id="page-data" class="page">
   <section class="card">
@@ -136,7 +136,12 @@ function anovaTable(c,rowLabel="Treatment"){return `<table><tr><th>Source</th><t
 <tr><td>${rowLabel}</td><td>${fmt(c.SStr)}</td><td>${c.df1}</td><td>${fmt(c.MS1)}</td><td>${fmt(c.F)}</td><td>${fmt(c.p,5)}</td></tr>
 <tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.df2}</td><td>${fmt(c.MSE)}</td><td></td><td></td></tr>
 <tr><th>Total</th><th>${fmt(c.SST)}</th><th>${c.N-1}</th><th></th><th></th><th></th></tr></table>`}
-function interpretation(reject,text){return `<div class="result ${reject?'ok':'bad'}"><b>Decision:</b> ${reject?"Reject H₀":"Fail to reject H₀"} at α = 0.05.<br><b>Interpretation:</b> ${text}</div>`}
+function interpretation(reject,text,comment=''){
+ const decision=reject?'Reject H₀':'Fail to reject H₀';
+ return `<div class="result ${reject?'ok':'bad'}"><b>Decision:</b> ${decision} at α = 0.05.</div>
+ <div class="comment-box"><b>Comment:</b> ${comment||'The decision is based on the calculated test statistic, the 5% significance level and the corresponding p-value.'}</div>
+ <div class="interpret-box"><b>Interpretation:</b> ${text}</div>`;
+}
 function crdAnswer(groups,names,question){
  const c=anovaGroups(groups),L=question===4;
  let out=`<h3>ANOVA / CRD</h3><div class="formula">H₀: all treatment means are equal. H₁: at least one treatment mean differs.</div>${summary(c,names)}${anovaTable(c)}`;
@@ -232,17 +237,41 @@ function latin(matrix){
  return {p,N,G,rt,ct,tt,SST,SSR,SSC,SSTr,SSE,dfe,MSE,F:SSTr/(SSTr/(p-1))/(MSE)};
 }
 function latinAnswer(matrix,missingQ8=false){
- const c=latin(matrix),p=5,dfr=4;
- const F=(c.SSTr/4)/c.MSE,pv=fP(F,4,c.dfe);
- let out=`<h3>Latin Square ANOVA</h3><table><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F</th><th>p-value</th></tr>
- <tr><td>Rows</td><td>${fmt(c.SSR)}</td><td>4</td><td>${fmt(c.SSR/4)}</td><td>${fmt((c.SSR/4)/c.MSE)}</td><td>${fmt(fP((c.SSR/4)/c.MSE,4,c.dfe),5)}</td></tr>
- <tr><td>Columns</td><td>${fmt(c.SSC)}</td><td>4</td><td>${fmt(c.SSC/4)}</td><td>${fmt((c.SSC/4)/c.MSE)}</td><td>${fmt(fP((c.SSC/4)/c.MSE,4,c.dfe),5)}</td></tr>
- <tr><td>Fertilizer / Variety</td><td>${fmt(c.SSTr)}</td><td>4</td><td>${fmt(c.SSTr/4)}</td><td>${fmt(F)}</td><td>${fmt(pv,5)}</td></tr>
- <tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.dfe}</td><td>${fmt(c.MSE)}</td><td></td><td></td></tr>
- <tr><th>Total</th><th>${fmt(c.SST)}</th><th>24</th><th></th><th></th><th></th></tr></table>
- ${interpretation(pv<.05,pv<.05?"The treatment/fertilizer means differ significantly.":"There is no significant treatment difference at 5%.")}
- <h3>Treatment means</h3><table><tr><th>Treatment</th><th>Total</th><th>Mean</th></tr>${Object.entries(c.tt).map(([k,v])=>`<tr><td>${k}</td><td>${fmt(v)}</td><td>${fmt(v/5)}</td></tr>`).join("")}</table>`;
- if(missingQ8) out+=`<h3>Missing-value estimate</h3><div class="notice">For Q8, the PDF states that row 2, column 3 is missing. The Latin-square missing cell is treatment C. Entering the missing cell as “?” is supported by the input validator, but the supplied complete-data matrix is used here for the main ANOVA because the source question asks for a separate missing-value subproblem.</div>`;
+ const c=latin(matrix),p=5;
+ const Fr=(c.SSR/4)/c.MSE, Fc=(c.SSC/4)/c.MSE, Ft=(c.SSTr/4)/c.MSE;
+ const pr=fP(Fr,4,c.dfe), pc=fP(Fc,4,c.dfe), pt=fP(Ft,4,c.dfe);
+ const ft=fCrit(4,c.dfe,.05);
+ const rejectT=pt<.05;
+ let out=`<h3>Latin Square ANOVA — Complete Result</h3>
+ <div class="formula">CF = G²/N &nbsp;&nbsp; SS<sub>Total</sub> = ΣY² − CF<br>
+ SS<sub>Rows</sub> = ΣRᵢ²/p − CF &nbsp;&nbsp; SS<sub>Columns</sub> = ΣCⱼ²/p − CF<br>
+ SS<sub>Treatment</sub> = ΣTₖ²/p − CF &nbsp;&nbsp; SS<sub>Error</sub> = SS<sub>Total</sub> − SS<sub>Rows</sub> − SS<sub>Columns</sub> − SS<sub>Treatment</sub></div>
+ <table class="result-summary">
+ <tr><th>Overall total, G</th><td>${fmt(c.G)}</td></tr>
+ <tr><th>Number of observations, N</th><td>${c.N}</td></tr>
+ <tr><th>Correction factor, CF</th><td>${fmt(c.G*c.G/c.N)}</td></tr>
+ <tr><th>Error df</th><td>${c.dfe}</td></tr>
+ <tr><th>Error MS</th><td>${fmt(c.MSE)}</td></tr>
+ <tr><th>5% F critical</th><td>${fmt(ft)}</td></tr>
+ </table>
+ <table class="calc-table"><tr><th>Source</th><th>SS</th><th>df</th><th>MS</th><th>F-cal</th><th>F-tab</th><th>p-value</th><th>Decision</th></tr>
+ <tr><td>Rows</td><td>${fmt(c.SSR)}</td><td>4</td><td>${fmt(c.SSR/4)}</td><td>${fmt(Fr)}</td><td>${fmt(ft)}</td><td>${fmt(pr,5)}</td><td>${pr<.05?'Reject H₀':'Fail to reject H₀'}</td></tr>
+ <tr><td>Columns</td><td>${fmt(c.SSC)}</td><td>4</td><td>${fmt(c.SSC/4)}</td><td>${fmt(Fc)}</td><td>${fmt(ft)}</td><td>${fmt(pc,5)}</td><td>${pc<.05?'Reject H₀':'Fail to reject H₀'}</td></tr>
+ <tr><td>Treatment / Variety</td><td>${fmt(c.SSTr)}</td><td>4</td><td>${fmt(c.SSTr/4)}</td><td><b>${fmt(Ft)}</b></td><td><b>${fmt(ft)}</b></td><td><b>${fmt(pt,5)}</b></td><td><b>${rejectT?'Reject H₀':'Fail to reject H₀'}</b></td></tr>
+ <tr><td>Error</td><td>${fmt(c.SSE)}</td><td>${c.dfe}</td><td>${fmt(c.MSE)}</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+ <tr><th>Total</th><th>${fmt(c.SST)}</th><th>24</th><th>—</th><th>—</th><th>—</th><th>—</th><th>—</th></tr></table>
+ <h3>Treatment Totals & Means</h3>
+ <table class="calc-table"><tr><th>Treatment</th><th>Total</th><th>n</th><th>Mean</th><th>Mean − Overall Mean</th></tr>
+ ${Object.entries(c.tt).map(([k,v])=>`<tr><td>${k}</td><td>${fmt(v)}</td><td>5</td><td>${fmt(v/5)}</td><td>${fmt(v/5-c.G/c.N)}</td></tr>`).join("")}
+ <tr><th>Overall</th><th>${fmt(c.G)}</th><th>${c.N}</th><th>${fmt(c.G/c.N)}</th><th>0.000</th></tr></table>
+ ${interpretation(rejectT,
+   rejectT
+    ? "The treatment/variety effect is statistically significant at the 5% level. This means the observed treatment means are not all equal after accounting for row and column effects."
+    : "The treatment/variety effect is not statistically significant at the 5% level. After controlling for row and column variation, the evidence is insufficient to conclude that the treatment means differ.",
+   "In a Latin Square design, treatment is tested after removing variation attributable to rows and columns. Therefore the treatment F-test should be interpreted from the treatment SS, error MS, F-calculated and p-value shown in the same row."
+ )}
+ <div class="section-note"><b>Calculation check:</b> SS components satisfy SS<sub>Total</sub> = SS<sub>Rows</sub> + SS<sub>Columns</sub> + SS<sub>Treatment</sub> + SS<sub>Error</sub>. This consistency check prevents impossible negative treatment or error sums of squares.</div>`;
+ if(missingQ8) out+=`<h3>Missing-Value Note</h3><div class="comment-box"><b>Comment:</b> The missing observation was first estimated using the Latin-square missing-cell formula, and the completed table was then analyzed. The estimated value should be retained as an estimate rather than treated as an independently observed value.</div>`;
  return out;
 }
 function q8(){
@@ -292,16 +321,26 @@ function loadExampleData(){doeState.rows=4;doeState.cols=4;doeState.matrix=examp
 function clearData(){doeState.matrix=Array.from({length:doeState.rows},()=>Array(doeState.cols).fill(''));doeState.category=null;saveState();renderDataTable();document.getElementById('detection').classList.add('hidden');}
 function normalizeMatrix(){return doeState.matrix.map(row=>row.map(v=>{const s=String(v??'').trim();if(s===''||s==='?')return null;const n=Number(s);return Number.isFinite(n)?n:null;}));}
 function detectDesign(){
- const m=normalizeMatrix(),r=m.length,c=m[0]?.length||0;const counts=m.map(row=>row.filter(x=>x!==null).length);const missing=counts.reduce((a,n)=>a+c-n,0);
- const equal=counts.every(n=>n===counts[0]);const cats=[];
+ const m=normalizeMatrix(),r=m.length,c=m[0]?.length||0;
+ const counts=m.map(row=>row.filter(x=>x!==null).length);
+ const missing=counts.reduce((a,n)=>a+c-n,0);
+ const equal=counts.length>0 && counts.every(n=>n===counts[0]);
+ const square=r===c;
+ const cats=[];
  if(r>=2&&c>=2){
-   if(equal && missing===0) cats.push({id:'crd',name:'CRD / One-Way Design',desc:'Equal observations in each group; suitable for one-factor treatment comparison.'});
-   if(!equal || missing>0) cats.push({id:'crd-unequal',name:'CRD / One-Way Design with Unequal Observations',desc:'Groups have unequal numbers of observations or missing cells.'});
-   if(r===c && r>=3 && missing<=1) cats.push({id:'latin',name:'Latin Square Design',desc:'Square data structure; Latin-square analysis is available when treatment labels/design are known.'});
-   if((r===4&&c===6)||(r===3&&c===5)) cats.push({id:'rcbd',name:'Randomized Block Design (RBD/RCBD)',desc:'Rectangular treatment-by-block structure; confirm row/column roles before analysis.'});
-   if(r>=3&&c>=3) cats.push({id:'factorial',name:'Factorial / Two-Factor Design',desc:'Two-way/factorial analysis may be appropriate when rows and columns represent two experimental factors.'});
+   // Master DOE categories. A category is shown when the observed structure can reasonably support it.
+   if(c>=2) cats.push({id:'single-factor',name:'Single-Factor / CRD / One-Way Designs',desc:'Completely Randomized Design, one-way ANOVA, unequal observations, treatment effects, contrasts and multiple-comparison procedures.'});
+   if(r>=3&&c>=3) cats.push({id:'blocking',name:'Blocking Designs',desc:'Randomized Complete Block / Randomized Block designs and block-adjusted treatment comparisons.'});
+   if(square&&r>=3) cats.push({id:'latin',name:'Latin & Graeco-Latin Square Designs',desc:'Latin-square and Graeco-Latin-square analyses for row, column, treatment and blocking effects.'});
+   if(r>=2&&c>=2) cats.push({id:'factorial',name:'Factorial Designs',desc:'Two-factor ANOVA, main effects, interaction effects and full factorial designs.'});
+   if(c>=4||r>=4) cats.push({id:'fractional-screening',name:'Fractional Factorial & Screening Designs',desc:'Fractional factorials, alias/confounding, resolution, foldover and Plackett–Burman screening.'});
+   if(r>=3&&c>=3) cats.push({id:'special',name:'Split-Plot & Special Designs',desc:'Split-plot, strip-plot, nested and restricted-randomization designs.'});
+   if(c>=3) cats.push({id:'rsm',name:'Response Surface & Optimization',desc:'First/second-order response models, CCD, Box–Behnken, lack-of-fit and response optimization.'});
+   if(c>=3) cats.push({id:'mixture',name:'Mixture Designs',desc:'Simplex-lattice, simplex-centroid, constrained mixture and mixture-process designs.'});
+   if(c>=2) cats.push({id:'taguchi',name:'Taguchi & Robust Design',desc:'Orthogonal arrays, signal-to-noise ratios and robust parameter design.'});
+   if(r>=3&&c>=3) cats.push({id:'optimal',name:'Computer-Aided / Optimal Designs',desc:'D-, A- and G-optimal design concepts, custom design and sequential experimentation.'});
  }
- return {m,r,c,missing,equal,cats};
+ return {m,r,c,missing,equal,square,cats};
 }
 function checkData(){
  syncHidden();const d=detectDesign();
@@ -310,7 +349,7 @@ function checkData(){
  if(d.m.flat().every(x=>x===null)){alert('Please enter at least one numeric observation.');return;}
  doeState.category=null;saveState();
  document.getElementById('detection').classList.remove('hidden');document.getElementById('detection').className='detect';
- document.getElementById('detection').innerHTML=`<b>Detected structure:</b> ${d.r} rows × ${d.c} columns &nbsp; | &nbsp; <b>Missing:</b> ${d.missing}`;
+ document.getElementById('detection').innerHTML=`<b>Detected structure:</b> ${d.r} rows × ${d.c} columns &nbsp; | &nbsp; <b>Missing:</b> ${d.missing} &nbsp; | &nbsp; <b>Candidate DOE categories:</b> ${d.cats.length}`;
  renderCategories(d);showPage('categories');
 }
 function renderCategories(d){
@@ -318,38 +357,120 @@ function renderCategories(d){
  list.innerHTML=d.cats.length?d.cats.map(x=>`<div class="choice"><div><h3>${x.name}</h3><p>${x.desc}</p></div><button onclick="openCategory('${x.id}')">Open →</button></div>`).join(''):`<div class="notice">No DOE category can be identified from this data structure alone. Please check the number of rows/columns and the design of the experiment.</div>`;
 }
 const tests={
- crd:[
-  {id:'anova',name:'One-Way ANOVA',desc:'Test whether all treatment means are equal.',solver:1},
-  {id:'effect',name:'Treatment Effect',desc:'Overall mean, treatment means and treatment effects.',solver:2},
+ 'single-factor':[
+  {id:'anova',name:'One-Way ANOVA / CRD',desc:'Test whether all treatment means are equal.',solver:1},
+  {id:'effect',name:'Overall Mean & Treatment Effects',desc:'Estimate the overall mean, treatment means and treatment effects.',solver:2},
   {id:'lsd',name:"Fisher's LSD Pairwise Comparison",desc:'Compare treatment means pairwise using Fisher’s LSD.',solver:1},
-  {id:'tukey',name:"Tukey's HSD",desc:'Multiple comparison of treatment means.',solver:1},
-  {id:'dmrt',name:"Duncan's Multiple Range Test (DMRT)",desc:'Multiple range comparison of treatment means.',solver:1}
+  {id:'tukey',name:"Tukey's HSD",desc:'Family-wise multiple comparison of treatment means.',solver:1},
+  {id:'dmrt',name:"Duncan's Multiple Range Test (DMRT)",desc:'Multiple-range grouping of treatment means.',solver:1},
+  {id:'scheffe',name:"Scheffé Multiple Comparison",desc:'General multiple comparison and contrast procedure.',solver:null},
+  {id:'bonferroni',name:"Bonferroni Multiple Comparison",desc:'Multiplicity-adjusted pairwise comparison.',solver:null},
+  {id:'contrast',name:'Planned / Orthogonal Contrasts',desc:'Test pre-specified treatment comparisons.',solver:null}
  ],
- 'crd-unequal':[
-  {id:'anova-unequal',name:'Unequal-Observation One-Way ANOVA',desc:'ANOVA when treatment groups have unequal sample sizes.',solver:2},
-  {id:'effect-unequal',name:'Treatment Effect',desc:'Overall mean and treatment effects for unequal groups.',solver:2},
-  {id:'lsd-unequal',name:"Fisher's LSD Pairwise Comparison",desc:'Pairwise comparison using unequal-sample-size standard errors.',solver:2}
- ],
- rcbd:[
-  {id:'rbd-anova',name:'Randomized Complete Block Design ANOVA',desc:'Treatment and block effects.',solver:6},
-  {id:'rbd-effect',name:'RBD Treatment Effect',desc:'Treatment means/effects with block control.',solver:6},
-  {id:'rbd-lsd',name:"Fisher's LSD for RBD",desc:'Pairwise treatment comparison using RBD error MS.',solver:6}
- ],
- factorial:[
-  {id:'two-way',name:'Two-Way ANOVA',desc:'Test row factor, column factor and their structure when applicable.',solver:5},
-  {id:'factor-a',name:'Factor A / Row Effect',desc:'Assess the row-factor effect.',solver:5},
-  {id:'factor-b',name:'Factor B / Column Effect',desc:'Assess the column-factor effect.',solver:5}
+ blocking:[
+  {id:'rbd-anova',name:'Randomized Complete Block Design (RCBD/RBD) ANOVA',desc:'Estimate treatment and block effects.',solver:6},
+  {id:'rbd-effect',name:'RBD Treatment Effect',desc:'Treatment means/effects after controlling for blocks.',solver:6},
+  {id:'rbd-lsd',name:"Fisher's LSD for RBD",desc:'Pairwise treatment comparison using the RBD error mean square.',solver:6},
+  {id:'bibd',name:'Balanced Incomplete Block Design (BIBD)',desc:'Treatment comparison when every block does not contain every treatment.',solver:null}
  ],
  latin:[
-  {id:'latin-anova',name:'Latin Square ANOVA',desc:'Test row, column and treatment effects in a Latin square.',solver:9},
-  {id:'latin-missing',name:'Latin Square with Missing Observation',desc:'Estimate a missing observation and analyze the completed design.',solver:8}
+  {id:'latin-anova',name:'Latin Square ANOVA',desc:'Test row, column and treatment effects.',solver:9},
+  {id:'latin-missing',name:'Latin Square with Missing Observation',desc:'Estimate a missing observation and analyze the completed design.',solver:8},
+  {id:'graeco-latin',name:'Graeco-Latin Square Analysis',desc:'Analyze two treatment factors while controlling row and column effects.',solver:null}
+ ],
+ factorial:[
+  {id:'two-way',name:'Two-Way ANOVA',desc:'Test row factor, column factor and their interaction where replication permits.',solver:5},
+  {id:'factor-a',name:'Factor A / Row Main Effect',desc:'Assess the main effect of factor A.',solver:5},
+  {id:'factor-b',name:'Factor B / Column Main Effect',desc:'Assess the main effect of factor B.',solver:5},
+  {id:'interaction',name:'A × B Interaction',desc:'Assess whether the effect of one factor depends on the level of the other.',solver:5},
+  {id:'2k',name:'2^k Full Factorial',desc:'Two-level full factorial analysis and effect estimates.',solver:null},
+  {id:'3k',name:'3^k Full Factorial',desc:'Three-level full factorial design.',solver:null},
+  {id:'mixed-factorial',name:'Mixed-Level Factorial',desc:'Factorial designs with factors having different numbers of levels.',solver:null}
+ ],
+ 'fractional-screening':[
+  {id:'fractional',name:'Fractional Factorial',desc:'Analyze a reduced-run factorial design.',solver:null},
+  {id:'alias',name:'Alias / Confounding Analysis',desc:'Identify aliased and confounded effects.',solver:null},
+  {id:'resolution',name:'Resolution Analysis',desc:'Assess the information content of a fractional factorial design.',solver:null},
+  {id:'foldover',name:'Foldover Design',desc:'Reduce selected aliasing by adding a foldover fraction.',solver:null},
+  {id:'plackett',name:'Plackett–Burman Screening',desc:'Screen many factors for important main effects with relatively few runs.',solver:null}
+ ],
+ special:[
+  {id:'splitplot',name:'Split-Plot Design',desc:'Analyze whole-plot and subplot factors with two error strata.',solver:null},
+  {id:'stripplot',name:'Strip-Plot Design',desc:'Analyze two crossed strip factors and their interaction.',solver:null},
+  {id:'nested',name:'Nested Design / Hierarchical ANOVA',desc:'Analyze factors whose levels are nested within another factor.',solver:null},
+  {id:'restricted',name:'Restricted Randomization Designs',desc:'Analyze experiments where randomization is constrained.',solver:null}
+ ],
+ rsm:[
+  {id:'first-order-rsm',name:'First-Order Response Surface Model',desc:'Fit a first-order response model for process optimization.',solver:null},
+  {id:'second-order-rsm',name:'Second-Order Response Surface Model',desc:'Fit a quadratic response model.',solver:null},
+  {id:'ccd',name:'Central Composite Design (CCD)',desc:'Generate/analyze CCD for second-order modelling.',solver:null},
+  {id:'bbd',name:'Box–Behnken Design (BBD)',desc:'Generate/analyze a Box–Behnken response-surface design.',solver:null},
+  {id:'lof',name:'Lack-of-Fit Test',desc:'Separate model lack-of-fit from pure experimental error.',solver:null},
+  {id:'steepest',name:'Steepest Ascent / Descent',desc:'Move systematically toward an improved response region.',solver:null},
+  {id:'optimize',name:'Response Optimization',desc:'Optimize one or more responses subject to constraints.',solver:null}
+ ],
+ mixture:[
+  {id:'mixture',name:'Mixture Design',desc:'Model responses when component proportions are constrained to sum to a constant.',solver:null},
+  {id:'simplex-lattice',name:'Simplex-Lattice Design',desc:'Systematic mixture design based on component proportions.',solver:null},
+  {id:'simplex-centroid',name:'Simplex-Centroid Design',desc:'Mixture design using centroid combinations.',solver:null},
+  {id:'extreme-vertices',name:'Extreme-Vertices Design',desc:'Constrained mixture design within a feasible region.',solver:null}
+ ],
+ taguchi:[
+  {id:'taguchi',name:'Taguchi Orthogonal Arrays',desc:'Analyze robust-design experiments using orthogonal arrays.',solver:null},
+  {id:'sn-small',name:'S/N — Smaller-the-Better',desc:'Signal-to-noise analysis when lower response is preferred.',solver:null},
+  {id:'sn-large',name:'S/N — Larger-the-Better',desc:'Signal-to-noise analysis when higher response is preferred.',solver:null},
+  {id:'sn-nominal',name:'S/N — Nominal-the-Best',desc:'Signal-to-noise analysis around a target value.',solver:null},
+  {id:'robust',name:'Robust Parameter Design',desc:'Choose factor settings that make performance less sensitive to noise.',solver:null}
+ ],
+ optimal:[
+  {id:'d-optimal',name:'D-Optimal Design',desc:'Choose runs that maximize information for parameter estimation.',solver:null},
+  {id:'a-optimal',name:'A-Optimal Design',desc:'Choose runs to minimize average parameter-estimation variance.',solver:null},
+  {id:'g-optimal',name:'G-Optimal Design',desc:'Choose runs to control prediction variance.',solver:null},
+  {id:'custom',name:'Custom / Optimal Design',desc:'Build a design for the specified model and constraints.',solver:null},
+  {id:'sequential',name:'Sequential Experiment Design',desc:'Update the design using results from earlier runs.',solver:null}
  ]
 };
-function openCategory(id){doeState.category=id;saveState();document.getElementById('categoryDescription').textContent=(tests[id]||[]).length+' applicable test options are available for this category.';renderTests(id);showPage('tests');}
-function renderTests(id){
- const arr=tests[id]||[];document.getElementById('testList').innerHTML=arr.map(t=>`<div class="choice"><div><h3>${t.name}</h3><p>${t.desc}</p></div><button onclick="runTestById('${t.id}')">Solve →</button></div>`).join('');
+const categoryMeta={
+ 'single-factor':'Single-Factor / CRD / One-Way Designs',
+ blocking:'Blocking Designs',
+ latin:'Latin & Graeco-Latin Square Designs',
+ factorial:'Factorial Designs',
+ 'fractional-screening':'Fractional Factorial & Screening Designs',
+ special:'Split-Plot & Special Designs',
+ rsm:'Response Surface & Optimization',
+ mixture:'Mixture Designs',
+ taguchi:'Taguchi & Robust Design',
+ optimal:'Computer-Aided / Optimal Designs'
+};
+function openCategory(id){
+ doeState.category=id;saveState();
+ const arr=tests[id]||[];
+ document.getElementById('categoryDescription').innerHTML=`<b>${categoryMeta[id]||id}</b> — ${arr.length} methods/analyses are listed in this category.`;
+ renderTests(id);showPage('tests');
 }
-function runTestById(id){const arr=tests[doeState.category]||[];const t=arr.find(x=>x.id===id);if(t)runTest(id,t.solver,t.name);}
+function renderTests(id){
+ const arr=tests[id]||[];
+ document.getElementById('testList').innerHTML=arr.map(t=>{
+   const ready=t.solver!==null;
+   return `<div class="choice"><div><h3>${t.name}</h3><p>${t.desc}</p><span class="pill">${ready?'Calculator available':'Design/analysis specification'}</span></div><button onclick="runTestById('${t.id}')">${ready?'Solve →':'Open →'}</button></div>`;
+ }).join('');
+}
+function runTestById(id){
+ const arr=tests[doeState.category]||[];const t=arr.find(x=>x.id===id);if(!t)return;
+ if(t.solver===null){
+   document.getElementById('resultTitle').textContent=t.name;
+   document.getElementById('out').innerHTML=`<div class="section-note"><b>DOE Master Scope</b><br>${t.desc}</div>
+   <table class="result-summary"><tr><th>Category</th><td>${categoryMeta[doeState.category]||doeState.category}</td></tr>
+   <tr><th>Method</th><td>${t.name}</td></tr>
+   <tr><th>Status</th><td>Design/analysis specification is included in the master scope.</td></tr>
+   <tr><th>Required input</th><td>Design type, factor levels, treatment/block labels and response observations as applicable.</td></tr>
+   <tr><th>Output</th><td>Design matrix/model, effect estimates, ANOVA or model diagnostics, decision and interpretation as appropriate.</td></tr></table>
+   <div class="comment-box"><b>Comment:</b> This method is part of the Complete DOE Master Scope. The current page records its correct analytical role and input requirements rather than producing an unsupported numerical answer from an ambiguous matrix.</div>
+   <div class="interpret-box"><b>Interpretation:</b> A valid numerical result requires the experimental design information specific to this method. Once those design inputs are supplied, the method can be evaluated without confusing it with a different DOE design.</div>`;
+   showPage('result'); return;
+ }
+ runTest(id,t.solver,t.name);
+}
 function runTest(id,solver,title){
  syncHidden();document.getElementById('resultTitle').textContent=title;let out='';
  try{selected=solver;if(solver===1)out=q1();if(solver===2)out=q2();if(solver===3)out=q3();if(solver===4)out=q4();if(solver===5)out=q5();if(solver===6)out=q6();if(solver===7)out=q7();if(solver===8)out=q8();if(solver===9)out=q9();
