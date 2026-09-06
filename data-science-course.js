@@ -29,44 +29,18 @@ if(window.DS_PHASES===undefined)window.DS_PHASES=DS_PHASES;
 
 /* Exam engine enhancement: 30-minute timed mastery tests + reset/new-question control. */
 (function(){
-  const EXAM_MINUTES=30, EXAM_SECONDS=EXAM_MINUTES*60;
-  let examTimerId=null, examDeadline=0, examSubmitted=false, observerStarted=false;
+  const EXAM_MINUTES=30,EXAM_SECONDS=EXAM_MINUTES*60;
+  let examTimerId=null,examDeadline=0,examSubmitted=false,observerStarted=false;
   function stopTimer(){if(examTimerId!==null){clearInterval(examTimerId);examTimerId=null}}
   function formatTime(s){const m=Math.floor(s/60),sec=s%60;return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
   function timerBox(){return document.getElementById('dsExamTimer')}
   function updateTimer(){const el=timerBox();if(!el)return;const left=Math.max(0,Math.ceil((examDeadline-Date.now())/1000));el.textContent=`⏱ Time Left: ${formatTime(left)}`;if(left<=300){el.style.background='#ffe8e8';el.style.color='#b42318';el.style.borderColor='#f0a3a3'}if(left<=0){stopTimer();const submit=document.getElementById('submit');if(submit&&!examSubmitted){submit.dataset.auto='1';submit.click()}}}
   function startTimer(){stopTimer();examSubmitted=false;examDeadline=Date.now()+EXAM_SECONDS*1000;updateTimer();examTimerId=setInterval(updateTimer,1000)}
-  function resetExam(){
-    stopTimer();
-    const result=document.getElementById('testResult');if(result){result.innerHTML='';result.className='result'}
-    const submit=document.getElementById('submit'),retake=document.getElementById('retake');
-    if(submit){submit.style.display='inline-block';submit.disabled=false;delete submit.dataset.auto;delete submit.dataset.enhanced}
-    if(retake)retake.style.display='none';
-    /* Reuse the existing course engine so its question-bank and anti-repeat logic remain intact. */
-    startTest();
-    setTimeout(()=>{bindControls();startTimer()},0);
-  }
-  function bindControls(){
-    const submit=document.getElementById('submit'),retake=document.getElementById('retake');if(!submit||!retake)return;
-    submit.dataset.enhanced='1';
-    submit.onclick=function(){if(examSubmitted)return;examSubmitted=true;stopTimer();submitTest()};
-    retake.textContent='🔄 Reset / New Questions';
-    retake.onclick=function(){resetExam()};
-  }
-  function mountExamUI(){
-    const test=document.querySelector('.test');if(!test)return;
-    let h=test.querySelector('#dsExamTimer');
-    if(!h){const title=test.querySelector('h2');h=document.createElement('div');h.id='dsExamTimer';h.setAttribute('role','timer');h.style.cssText='display:inline-block;margin:8px 0 12px;padding:10px 14px;border-radius:10px;background:#fff4e5;border:1px solid #f2c98b;color:#9a4d00;font-size:18px;font-weight:800';if(title)title.insertAdjacentElement('afterend',h)}
-    const small=test.querySelector('.small');if(small&&!small.dataset.timerNote){small.dataset.timerNote='1';small.innerHTML+=' <strong>Time limit: 30 minutes.</strong> When the timer reaches 00:00, the test is submitted automatically.'}
-    bindControls();startTimer();
-  }
-  function observe(){
-    if(observerStarted)return;observerStarted=true;
-    const content=document.getElementById('content');if(!content)return;
-    const mo=new MutationObserver(()=>{const submit=document.getElementById('submit');if(submit&&!submit.dataset.enhanced){setTimeout(mountExamUI,0)}});
-    mo.observe(content,{childList:true,subtree:true});
-    setTimeout(mountExamUI,0);
-  }
+  function resetExam(){stopTimer();const result=document.getElementById('testResult');if(result){result.innerHTML='';result.className='result'}const submit=document.getElementById('submit'),retake=document.getElementById('retake');if(submit){submit.style.display='inline-block';submit.disabled=false;delete submit.dataset.auto;delete submit.dataset.enhanced}if(retake)retake.style.display='none';startTest();setTimeout(()=>{bindControls();startTimer()},0)}
+  window.dsExamReset=resetExam;
+  function bindControls(){const submit=document.getElementById('submit'),retake=document.getElementById('retake');if(!submit||!retake)return;submit.dataset.enhanced='1';submit.onclick=function(){if(examSubmitted)return;examSubmitted=true;stopTimer();submitTest()};retake.textContent='🔄 Reset / New Questions';retake.onclick=resetExam}
+  function mountExamUI(){const test=document.querySelector('.test');if(!test)return;let h=test.querySelector('#dsExamTimer');if(!h){const title=test.querySelector('h2');h=document.createElement('div');h.id='dsExamTimer';h.setAttribute('role','timer');h.style.cssText='display:inline-block;margin:8px 0 12px;padding:10px 14px;border-radius:10px;background:#fff4e5;border:1px solid #f2c98b;color:#9a4d00;font-size:18px;font-weight:800';if(title)title.insertAdjacentElement('afterend',h)}const small=test.querySelector('.small');if(small&&!small.dataset.timerNote){small.dataset.timerNote='1';small.innerHTML+=' <strong>Time limit: 30 minutes.</strong> When the timer reaches 00:00, the test is submitted automatically.'}bindControls();startTimer()}
+  function observe(){if(observerStarted)return;observerStarted=true;const content=document.getElementById('content');if(!content)return;const mo=new MutationObserver(()=>{const submit=document.getElementById('submit');if(submit&&!submit.dataset.enhanced){setTimeout(mountExamUI,0)}});mo.observe(content,{childList:true,subtree:true});setTimeout(mountExamUI,0)}
   function boot(){observe();window.addEventListener('beforeunload',stopTimer)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
