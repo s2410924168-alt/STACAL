@@ -26,3 +26,47 @@ function dsQuestionBank(c){const bank=[],topics=dsExamTopics(c);const add=(type,
 function dsClassContent(c){const domains=[DS_DOMAINS[(c.id-1)%10],DS_DOMAINS[c.id%10],DS_DOMAINS[(c.id+3)%10]],topics=dsExamTopics(c);const steps=[`Step 1 — Define the research question and identify the variables relevant to ${c.title}.`,`Step 2 — Prepare/check the dataset: variable types, coding, missing values and obvious data-quality problems.`,`Step 3 — Select the appropriate method/tool (${c.tool}) and state the assumptions or conditions that matter.`,`Step 4 — Perform the analysis using the provided data and record the key output.`,`Step 5 — Verify the result with a sensible check (formula, alternative calculation, diagnostic or cross-software check where applicable).`,`Step 6 — Interpret the finding in the research context; distinguish statistical output from substantive meaning.`,`Step 7 — Write a concise research-ready result statement and mention important limitations.`];return {objectives:[`Explain the core ideas of ${c.title}.`,`Apply ${c.title} to a realistic research problem.`,`Use ${c.tool} appropriately and interpret the output.`,`Report findings clearly and identify important limitations.`],examTopics:topics,theory:`${c.title} is taught through a research-first workflow. You will learn the concept, identify the research question and variables, prepare the data, choose the appropriate method/tool, perform and verify the analysis, interpret the result, and report it transparently.`,examples:domains.map((d,i)=>({domain:d,problem:`A researcher in ${d.toLowerCase()} wants to answer a practical question related to ${c.title}.`,data:`Synthetic Research Dataset ${c.id}.${i+1}: relevant observations prepared for practice.`,analysis:`Apply ${c.tool} to the question, documenting preparation, method choice and assumptions.`,result:`Produce the relevant statistic/table/model/query/chart/output and check whether it is sensible.`,interpretation:`Explain what the result means for the ${d.toLowerCase()} research question and what it does not establish.`})),steps,practice:`Complete the example from the dataset yourself, change at least one input/condition, verify the result independently, and write a 150–250 word interpretation.`,reporting:`State the research purpose, variables/data, method and tool, key numerical or analytical result, uncertainty/assumptions where relevant, and a context-specific interpretation.`,examMix:`The 20-question mastery test is mixed: basic concepts + applied research scenarios + calculation/numerical questions + output interpretation + decision questions. Questions are selected from a 50-question bank and randomized on each attempt.`}}
 function dsDatasetCSV(c){const rows=['id,group,age,score,exposure,outcome'];for(let i=1;i<=30;i++)rows.push(`${i},${i%3===0?'B':'A'},${18+(i%25)},${50+(i*7+c.id)%48},${(i%10)+1},${(i*3+c.id)%20}`);return rows.join('\n')}
 if(window.DS_PHASES===undefined)window.DS_PHASES=DS_PHASES;
+
+/* Exam engine enhancement: 30-minute timed mastery tests + reset/new-question control. */
+(function(){
+  const EXAM_MINUTES=30, EXAM_SECONDS=EXAM_MINUTES*60;
+  let examTimerId=null, examDeadline=0, examSubmitted=false, observerStarted=false;
+  function stopTimer(){if(examTimerId!==null){clearInterval(examTimerId);examTimerId=null}}
+  function formatTime(s){const m=Math.floor(s/60),sec=s%60;return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+  function timerBox(){return document.getElementById('dsExamTimer')}
+  function updateTimer(){const el=timerBox();if(!el)return;const left=Math.max(0,Math.ceil((examDeadline-Date.now())/1000));el.textContent=`⏱ Time Left: ${formatTime(left)}`;if(left<=300){el.style.background='#ffe8e8';el.style.color='#b42318';el.style.borderColor='#f0a3a3'}if(left<=0){stopTimer();const submit=document.getElementById('submit');if(submit&&!examSubmitted){submit.dataset.auto='1';submit.click()}}}
+  function startTimer(){stopTimer();examSubmitted=false;examDeadline=Date.now()+EXAM_SECONDS*1000;updateTimer();examTimerId=setInterval(updateTimer,1000)}
+  function resetExam(){
+    stopTimer();
+    const result=document.getElementById('testResult');if(result){result.innerHTML='';result.className='result'}
+    const submit=document.getElementById('submit'),retake=document.getElementById('retake');
+    if(submit){submit.style.display='inline-block';submit.disabled=false;delete submit.dataset.auto;delete submit.dataset.enhanced}
+    if(retake)retake.style.display='none';
+    /* Reuse the existing course engine so its question-bank and anti-repeat logic remain intact. */
+    startTest();
+    setTimeout(()=>{bindControls();startTimer()},0);
+  }
+  function bindControls(){
+    const submit=document.getElementById('submit'),retake=document.getElementById('retake');if(!submit||!retake)return;
+    submit.dataset.enhanced='1';
+    submit.onclick=function(){if(examSubmitted)return;examSubmitted=true;stopTimer();submitTest()};
+    retake.textContent='🔄 Reset / New Questions';
+    retake.onclick=function(){resetExam()};
+  }
+  function mountExamUI(){
+    const test=document.querySelector('.test');if(!test)return;
+    let h=test.querySelector('#dsExamTimer');
+    if(!h){const title=test.querySelector('h2');h=document.createElement('div');h.id='dsExamTimer';h.setAttribute('role','timer');h.style.cssText='display:inline-block;margin:8px 0 12px;padding:10px 14px;border-radius:10px;background:#fff4e5;border:1px solid #f2c98b;color:#9a4d00;font-size:18px;font-weight:800';if(title)title.insertAdjacentElement('afterend',h)}
+    const small=test.querySelector('.small');if(small&&!small.dataset.timerNote){small.dataset.timerNote='1';small.innerHTML+=' <strong>Time limit: 30 minutes.</strong> When the timer reaches 00:00, the test is submitted automatically.'}
+    bindControls();startTimer();
+  }
+  function observe(){
+    if(observerStarted)return;observerStarted=true;
+    const content=document.getElementById('content');if(!content)return;
+    const mo=new MutationObserver(()=>{const submit=document.getElementById('submit');if(submit&&!submit.dataset.enhanced){setTimeout(mountExamUI,0)}});
+    mo.observe(content,{childList:true,subtree:true});
+    setTimeout(mountExamUI,0);
+  }
+  function boot(){observe();window.addEventListener('beforeunload',stopTimer)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
