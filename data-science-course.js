@@ -1,5 +1,4 @@
-/* Statistical Hub — Research + Data Science Master Course
-   Course map is explicitly ID-driven so numbering cannot drift between phases. */
+/* Statistical Hub — Research + Data Science Master Course */
 const DS_PHASES=[
 {n:1,name:'Research & Data Fundamentals',range:[1,10],topics:['Research fundamentals','Research questions and objectives','Hypothesis and variables','Measurement scales','Population and sample','Sampling methods','Data types and sources','Questionnaire and scale design','Data collection and ethics','Research data workflow']},
 {n:2,name:'Excel for Research & Data Analysis',range:[11,30],topics:['Excel fundamentals','Data entry and validation','Formulas and references','Logical functions','Text and cleaning functions','Date and time functions','Lookup functions','Conditional aggregation','Sorting and filtering','Tables and structured references','Pivot Tables','Pivot Charts','Descriptive statistics','Correlation in Excel','Regression in Excel','ANOVA in Excel','Research reporting in Excel','Data-cleaning project','Analysis project','Research dashboard']},
@@ -12,66 +11,36 @@ const DS_PHASES=[
 {n:9,name:'Advanced Statistics & Research Analysis',range:[121,130],topics:['Estimation and confidence intervals','Sample size and power','Hypothesis testing','ANOVA and effect sizes','Partial correlation','Multiple regression','Regression diagnostics','Logistic regression','Multivariate analysis','PCA, factor and cluster analysis']},
 {n:10,name:'SEM, Machine Learning & Research Projects',range:[131,140],topics:['SmartPLS and PLS-SEM','Constructs and indicators','Reflective and formative models','Measurement model','Structural model','Bootstrapping and hypotheses','Mediation and moderation','Machine learning fundamentals','Classification and clustering','End-to-end research project']}
 ];
-
 const DS_DOMAINS=['Education','Public health','Agriculture','Economics','Business','Psychology','Environmental science','Biological science','Medical research','Survey research'];
 const DS_TOOLS={1:'Research methodology',2:'Microsoft Excel',3:'R / RStudio',4:'Python',5:'SQL',6:'SPSS',7:'Stata / EViews / Jamovi / JASP / G*Power',8:'Power BI / Tableau',9:'R / SPSS / Stata',10:'SmartPLS / Python'};
-
-// Build the 140 classes from the declared numeric ranges, with the ID assigned explicitly.
-const DS_TITLES=[];
-DS_PHASES.forEach(p=>{
-  const expected=p.range[1]-p.range[0]+1;
-  if(p.topics.length!==expected) throw new Error(`Course map error: Phase ${p.n} declares ${expected} classes but contains ${p.topics.length} topics.`);
-  p.topics.forEach((title,i)=>DS_TITLES.push({
-    id:p.range[0]+i,
-    title,
-    phase:p.n,
-    phaseName:p.name,
-    tool:DS_TOOLS[p.n]
-  }));
-});
-if(DS_TITLES.length!==140) throw new Error(`Course map error: expected 140 classes, found ${DS_TITLES.length}.`);
-if(DS_TITLES.some((c,i)=>c.id!==i+1)) throw new Error('Course map error: class IDs are not sequential 01–140.');
-
-function dsClass(id){const n=Number(id);return Number.isInteger(n)&&n>=1&&n<=140?DS_TITLES[n-1]:null;}
-function dsStorage(){try{return JSON.parse(localStorage.getItem('stacal_ds_progress')||'{}')||{}}catch(e){return {}}}
-function dsSave(x){localStorage.setItem('stacal_ds_progress',JSON.stringify(x||{}))}
-function dsIsPassed(id){const n=Number(id);return n>=1&&!!dsStorage()[n]?.passed}
-
-// CLASS 01 is the entry point and is ALWAYS unlocked. No previous exam exists.
-function dsUnlocked(id){
-  const n=Number(id);
-  if(!Number.isInteger(n)||n<1||n>140)return false;
-  if(n===1)return true;
-  return dsIsPassed(n-1);
+const DS_TITLES=[];let dsNo=1;DS_PHASES.forEach(p=>{if(p.topics.length!==p.range[1]-p.range[0]+1)throw new Error(`Phase ${p.n} topic count does not match class range`);p.topics.forEach(t=>DS_TITLES.push({id:dsNo,title:t,phase:p.n,phaseName:p.name,tool:DS_TOOLS[p.n]}),dsNo++)});
+if(DS_TITLES.length!==140)throw new Error(`Course must contain exactly 140 classes; found ${DS_TITLES.length}`);
+function dsClass(id){return DS_TITLES.find(x=>x.id===Number(id));}
+function dsStorage(){try{return JSON.parse(localStorage.getItem('stacal_ds_progress')||'{}')}catch(e){return {}}}
+function dsSave(x){localStorage.setItem('stacal_ds_progress',JSON.stringify(x))}
+function dsIsPassed(id){return !!dsStorage()[id]?.passed}
+function dsUnlocked(id){id=Number(id);return id===1||dsIsPassed(id-1)}
+function dsExamTopics(c){
+ const p=DS_PHASES.find(x=>x.n===c.phase), idx=c.id-p.range[0], before=p.topics.slice(Math.max(0,idx-2),idx), current=[c.title];
+ return [...before,...current].filter((v,i,a)=>a.indexOf(v)===i);
 }
-
+function dsCalcSeed(c,i){return ((c.id*17+i*13)%37)+8}
 function dsQuestionBank(c){
-  const bank=[];
-  const add=(type,q,opts,ans,exp,topic)=>bank.push({id:`C${String(c.id).padStart(3,'0')}-Q${String(bank.length+1).padStart(3,'0')}`,type,q,opts,ans,exp,topic:topic||c.title});
-  for(let i=0;i<50;i++){
-    const d=DS_DOMAINS[i%DS_DOMAINS.length],v=i%5;
-    if(v===0)add('Concept',`In a ${d.toLowerCase()} study, what is the main learning target of “${c.title}”?`,['Applying the concept to a real research/data problem','Memorizing unrelated software shortcuts','Removing all statistical assumptions','Avoiding interpretation'],0,'The course uses each topic to solve a realistic research or data-analysis problem.');
-    else if(v===1)add('Application',`A researcher is working in ${d.toLowerCase()} and needs to apply “${c.title}”. What should be done first?`,['Define the research problem and data requirements','Report a p-value before analysing data','Delete unusual observations automatically','Choose a chart before defining variables'],0,'Start from the research question and understand the data before selecting an analysis.');
-    else if(v===2)add('Decision',`Which principle is most appropriate when using ${DS_TOOLS[c.phase]} for “${c.title}”?`,['Choose the tool because it fits the task and data','Use the tool regardless of the research question','Ignore assumptions','Treat software output as proof without interpretation'],0,'Software is a means to solve a research problem; method selection and interpretation remain essential.');
-    else if(v===3)add('Interpretation',`After completing “${c.title}”, which statement best reflects good research practice?`,['Check assumptions, interpret the output in context, and report transparently','Report only the largest number','Hide missing-data decisions','Change the research question to match the result'],0,'Sound analysis includes assumptions, context, transparent decisions, and appropriate reporting.');
-    else add('Practice',`Which workflow is best for a practical exercise on “${c.title}”?`,['Research question → data → method → software → analysis → interpretation → report','Software → random output → conclusion','Conclusion → data deletion → method','Chart → hypothesis → ignore data'],0,'The platform follows a research-first workflow from question through reporting.');
-  }
-  return bank;
+ const bank=[];const topics=dsExamTopics(c);const add=(type,q,opts,ans,exp,topic)=>bank.push({id:`${c.id}-${bank.length+1}`,type,q,opts,ans,exp,topic:topic||c.title});
+ for(let i=0;i<50;i++){
+   const d=DS_DOMAINS[i%DS_DOMAINS.length],topic=topics[i%topics.length],seed=dsCalcSeed(c,i),v=i%5;
+   if(v===0)add('Basic',`Which statement best describes “${topic}” in a ${d.toLowerCase()} research study?`,['It should be understood and applied in relation to the research question and data','It is only a software shortcut','It removes the need for interpretation','It guarantees a significant result'],0,`The topic must be connected to the research question, data and appropriate interpretation.`,topic);
+   else if(v===1){const a=seed,b=(i%7)+2,ans=a+b;add('Calculation',`A researcher records ${a} observations and then adds ${b} more. What is the total number of observations?`,[String(ans-1),String(ans),String(ans+1),String(ans+2)],1,`Add the original observations and the new observations: ${a} + ${b} = ${ans}.`,topic)}
+   else if(v===2)add('Application',`A ${d.toLowerCase()} researcher is applying “${topic}”. What should be done first?`,['Define the research question, variables and data requirements','Run every available test','Delete all unusual values automatically','Write the conclusion before analysing data'],0,`Research-first analysis begins by defining the question and understanding the data.`,topic);
+   else if(v===3){const x=seed,y=(i%6)+2,mean=(x+y)/2;add('Calculation',`Two measurements are ${x} and ${y}. What is their arithmetic mean?`,[mean.toFixed(1),x+y,(x-y).toFixed(1),y.toFixed(1)],0,`Mean = (x + y) / 2 = (${x} + ${y}) / 2 = ${mean.toFixed(1)}.`,topic)}
+   else add('Interpretation',`After analysing “${topic}”, which reporting practice is most appropriate?`,['Report the result with context, assumptions/limitations and an appropriate interpretation','Report only the software output','Hide missing-data decisions','Change the hypothesis after seeing the result'],0,`Good research reporting explains what the result means, under what assumptions, and what limitations remain.`,topic);
+ }
+ return bank;
 }
-
 function dsClassContent(c){
-  const domains=[DS_DOMAINS[(c.id-1)%10],DS_DOMAINS[c.id%10],DS_DOMAINS[(c.id+3)%10]];
-  return {
-    objectives:[`Explain the core ideas of ${c.title}.`,`Apply the topic to a realistic ${domains[0].toLowerCase()} research problem.`,`Use ${c.tool} appropriately and interpret the output.`,`Report findings clearly and identify important limitations.`],
-    theory:`${c.title} is taught as a research skill rather than a software-command exercise. Learn the concept, identify the research question, understand the variables and data structure, choose an appropriate method/tool, analyse the data, check assumptions where relevant, interpret the result, and communicate it transparently.`,
-    examples:domains.map((d,i)=>({domain:d,problem:`A researcher in ${d.toLowerCase()} wants to investigate a practical question related to ${c.title}.`,data:`Synthetic Research Dataset ${c.id}.${i+1}: observations representing relevant variables for an educational exercise.`,analysis:`Apply ${c.tool} to the research question, document data preparation and method choices, then inspect the output.`,result:`Expected output is the relevant table, statistic, model, query result, visualization, or research summary for the chosen method.`,interpretation:`Interpret the result in the context of ${d.toLowerCase()} rather than treating a software output as a conclusion.`})),
-    practice:`Use a small synthetic dataset, reproduce one of the examples, change one research condition, and write a 150–250 word interpretation.`,
-    reporting:`In a thesis or paper, state the research purpose, method/tool, key result, uncertainty or assumptions where relevant, and a context-specific interpretation.`
-  };
+ const domains=[DS_DOMAINS[(c.id-1)%10],DS_DOMAINS[c.id%10],DS_DOMAINS[(c.id+3)%10]],topics=dsExamTopics(c);
+ const steps=[`Step 1 — Define the research question and identify the variables relevant to ${c.title}.`,`Step 2 — Prepare/check the dataset: variable types, coding, missing values and obvious data-quality problems.`,`Step 3 — Select the appropriate method/tool (${c.tool}) and state the assumptions or conditions that matter.`,`Step 4 — Perform the analysis using the provided data and record the key output.`,`Step 5 — Verify the result with a sensible check (formula, alternative calculation, diagnostic or cross-software check where applicable).`,`Step 6 — Interpret the finding in the research context; distinguish statistical output from substantive meaning.`,`Step 7 — Write a concise research-ready result statement and mention important limitations.`];
+ return {objectives:[`Explain the core ideas of ${c.title}.`,`Apply ${c.title} to a realistic research problem.`,`Use ${c.tool} appropriately and interpret the output.`,`Report findings clearly and identify important limitations.`],examTopics:topics,theory:`${c.title} is taught through a research-first workflow. You will learn the concept, identify the research question and variables, prepare the data, choose the appropriate method/tool, perform and verify the analysis, interpret the result, and report it transparently.`,examples:domains.map((d,i)=>({domain:d,problem:`A researcher in ${d.toLowerCase()} wants to answer a practical question related to ${c.title}.`,data:`Synthetic Research Dataset ${c.id}.${i+1}: relevant observations prepared for practice.`,analysis:`Apply ${c.tool} to the question, documenting preparation, method choice and assumptions.`,result:`Produce the relevant statistic/table/model/query/chart/output and check whether it is sensible.`,interpretation:`Explain what the result means for the ${d.toLowerCase()} research question and what it does not establish.`})),steps,practice:`Complete the example from the dataset yourself, change at least one input/condition, verify the result independently, and write a 150–250 word interpretation.`,reporting:`State the research purpose, variables/data, method and tool, key numerical or analytical result, uncertainty/assumptions where relevant, and a context-specific interpretation.`,`examMix`:`The 20-question mastery test is mixed: basic concepts + applied research scenarios + calculation/numerical questions + output interpretation + decision questions. Questions are selected from a 50-question bank and randomized on each attempt.`};
 }
-function dsDatasetCSV(c){
-  const rows=['id,group,age,score,exposure,outcome'];
-  for(let i=1;i<=30;i++)rows.push(`${i},${i%3===0?'B':'A'},${18+(i%25)},${50+(i*7+c.id)%48},${(i%10)+1},${(i*3+c.id)%20}`);
-  return rows.join('\n');
-}
+function dsDatasetCSV(c){const rows=['id,group,age,score,exposure,outcome'];for(let i=1;i<=30;i++)rows.push(`${i},${i%3===0?'B':'A'},${18+(i%25)},${50+(i*7+c.id)%48},${(i%10)+1},${(i*3+c.id)%20}`);return rows.join('\n')}
 if(window.DS_PHASES===undefined)window.DS_PHASES=DS_PHASES;
